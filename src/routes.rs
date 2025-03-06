@@ -1,3 +1,4 @@
+use actix_web::Either;
 use actix_web::{HttpRequest, HttpResponse, error::HttpError, web};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -13,6 +14,7 @@ use crate::common::{MAX_TOKENS, TOKENIZED_OUTPUT};
 pub struct Request {
     max_tokens: Option<usize>,
     // extras
+    stream: Option<bool>,
     stream_options: Option<StreamOptions>,
     #[serde(flatten)]
     extra: serde_json::Map<String, Value>,
@@ -86,14 +88,24 @@ impl Default for Choice {
         }
     }
 }
-
-pub async fn completions(
+// Use the same endpoint to allow the streaming
+pub async fn common_completions(
     _req: HttpRequest,
     payload: web::Json<Request>,
-) -> Result<HttpResponse, HttpError> {
+) -> Result<Either<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, HttpResponse>, HttpError>
+{
+    // Return Either Left -> streaming, Right-> normal
+    let payload = payload.into_inner();
+    // route to streaming
+    match payload.stream {
+        Some(true) => Ok(Either::Left(chat_completions(_req, payload).await?)),
+        _ => Ok(Either::Right(completions(_req, payload).await?)),
+    }
+}
+
+async fn completions(_req: HttpRequest, payload: Request) -> Result<HttpResponse, HttpError> {
     // This returns the string
     // check if there is max_tokens inside the payload
-    let payload = payload.into_inner();
     let response: Response = if payload.max_tokens.is_some() {
         // Only slice if max_tokens is explicitly provided
         let max_tokens = payload.max_tokens.unwrap();
@@ -108,11 +120,10 @@ pub async fn completions(
     Ok(HttpResponse::Ok().json(response))
 }
 
-pub async fn chat_completions(
+async fn chat_completions(
     _req: HttpRequest,
-    payload: web::Json<Request>,
+    payload: Request,
 ) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, HttpError> {
-    let payload = payload.into_inner();
     let max_tokens = payload.max_tokens.unwrap_or(*MAX_TOKENS);
     let log_usage: bool = payload
         .stream_options

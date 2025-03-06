@@ -105,6 +105,12 @@ impl Stream for StringsStream {
 
     fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = &mut *self;
+        // high level
+        // Starts with state::Start
+        // Once it reaches the end of the strings, it will switch to state::Usage if log usage is enabled
+        // After state::Usage, it will switch to state::Done
+        // If log usage is not enabled, it will switch to state::Done
+        // Once it reaches state::Done, it will switch to state::Completed
 
         match this.state {
             State::Start => {
@@ -115,7 +121,11 @@ impl Stream for StringsStream {
                     let string_item = serde_json::to_string(&chunk).unwrap();
                     Poll::Ready(Some(Ok(sse::Event::Data(sse::Data::new(string_item)))))
                 } else {
-                    this.state = State::Done;
+                    if this.include_usage {
+                        this.state = State::Usage;
+                    } else {
+                        this.state = State::Done;
+                    }
                     let chunk = StreamingChunkResponse {
                         choices: vec![Choice {
                             finish_reason: Some("stop".to_string()),
@@ -132,18 +142,8 @@ impl Stream for StringsStream {
                     // TODO: implement the final cost chunk
                 }
             }
-            State::Done => {
-                if this.include_usage {
-                    this.state = State::Usage;
-                } else {
-                    this.state = State::Completed;
-                }
-                Poll::Ready(Some(Ok(sse::Event::Data(sse::Data::new(
-                    "[DONE]".to_string(),
-                )))))
-            }
             State::Usage => {
-                this.state = State::Completed;
+                this.state = State::Done;
                 let chunk = StreamingChunkResponse {
                     choices: vec![], // empty choices
                     usage: Some(Usage {
@@ -156,6 +156,12 @@ impl Stream for StringsStream {
                 // This is supposed to send usage
                 let string_item = serde_json::to_string(&chunk).unwrap();
                 Poll::Ready(Some(Ok(sse::Event::Data(sse::Data::new(string_item)))))
+            }
+            State::Done => {
+                this.state = State::Completed;
+                Poll::Ready(Some(Ok(sse::Event::Data(sse::Data::new(
+                    "[DONE]".to_string(),
+                )))))
             }
             State::Completed => Poll::Ready(None),
         }
