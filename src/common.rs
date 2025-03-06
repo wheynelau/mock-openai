@@ -29,7 +29,6 @@ fn init_string() -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    
 
     #[test]
     fn test_init_string() {

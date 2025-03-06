@@ -10,10 +10,12 @@ use tokio::time::Duration;
 use actix_web::{App, HttpServer, web};
 
 fn configure(cfg: &mut web::ServiceConfig) {
-    let scope = web::scope("/v1").route(
-        "/chat/completions",
-        web::post().to(routes::chat_completions),
-    );
+    let scope = web::scope("/v1")
+        .route("/completions", web::post().to(routes::completions))
+        .route(
+            "/chat/completions",
+            web::post().to(routes::chat_completions),
+        );
 
     cfg.service(scope);
 }

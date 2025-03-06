@@ -2,13 +2,24 @@ use actix_web::{HttpRequest, HttpResponse, error::HttpError, web};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use actix_web_lab::sse::{self, Sse};
+use futures_util::Stream;
+use std::convert::Infallible;
+
+use crate::stream::StringsStream;
+
 use crate::common::{MAX_TOKENS, TOKENIZED_OUTPUT};
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Request {
     max_tokens: Option<usize>,
     // extras
     #[serde(flatten)]
+    stream_options: Option<StreamOptions>,
     extra: serde_json::Map<String, Value>,
+}
+#[derive(Deserialize, Serialize, Debug)]
+struct StreamOptions {
+    include_usage: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -23,7 +34,6 @@ struct Response {
 
 impl Response {
     fn from_response_string(response: String, max_tokens: usize) -> Self {
-        
         Response {
             choices: vec![Choice {
                 text: response,
@@ -51,14 +61,12 @@ impl Default for Response {
         }
     }
 }
-#[derive(Deserialize, Serialize, Debug)]
-#[derive(Default)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 struct Usage {
     prompt_tokens: i32,
     completion_tokens: i32,
     total_tokens: i32,
 }
-
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Choice {
@@ -79,7 +87,7 @@ impl Default for Choice {
     }
 }
 
-pub async fn chat_completions(
+pub async fn completions(
     _req: HttpRequest,
     payload: web::Json<Request>,
 ) -> Result<HttpResponse, HttpError> {
@@ -98,4 +106,20 @@ pub async fn chat_completions(
     };
 
     Ok(HttpResponse::Ok().json(response))
+}
+
+pub async fn chat_completions(
+    _req: HttpRequest,
+    payload: web::Json<Request>,
+) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, HttpError> {
+    let payload = payload.into_inner();
+    let max_tokens = payload.max_tokens.unwrap_or(*MAX_TOKENS);
+    let log_usage: bool = payload
+        .stream_options
+        .unwrap_or(StreamOptions {
+            include_usage: false,
+        })
+        .include_usage;
+    let stream = StringsStream::new(TOKENIZED_OUTPUT.clone(), Some(max_tokens), log_usage);
+    Ok(Sse::from_stream(stream))
 }
