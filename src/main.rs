@@ -13,7 +13,7 @@ fn configure(cfg: &mut web::ServiceConfig) {
     let scope = web::scope("/v1")
         .route("/completions", web::post().to(routes::completions))
         .route(
-            "/chat/completions",
+            "/streaming",
             web::post().to(routes::chat_completions),
         );
 

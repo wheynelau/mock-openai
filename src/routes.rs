@@ -13,8 +13,8 @@ use crate::common::{MAX_TOKENS, TOKENIZED_OUTPUT};
 pub struct Request {
     max_tokens: Option<usize>,
     // extras
-    #[serde(flatten)]
     stream_options: Option<StreamOptions>,
+    #[serde(flatten)]
     extra: serde_json::Map<String, Value>,
 }
 #[derive(Deserialize, Serialize, Debug)]

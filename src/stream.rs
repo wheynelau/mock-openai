@@ -133,17 +133,17 @@ impl Stream for StringsStream {
                 }
             }
             State::Done => {
-                this.state = State::Usage;
+                if this.include_usage {
+                    this.state = State::Usage;
+                } else {
+                    this.state = State::Completed;
+                }
                 Poll::Ready(Some(Ok(sse::Event::Data(sse::Data::new(
                     "[DONE]".to_string(),
                 )))))
             }
             State::Usage => {
-                if this.include_usage {
-                    this.state = State::Completed;
-                } else {
-                    this.state = State::Done;
-                }
+                this.state = State::Completed;
                 let chunk = StreamingChunkResponse {
                     choices: vec![], // empty choices
                     usage: Some(Usage {
@@ -157,7 +157,7 @@ impl Stream for StringsStream {
                 let string_item = serde_json::to_string(&chunk).unwrap();
                 Poll::Ready(Some(Ok(sse::Event::Data(sse::Data::new(string_item)))))
             }
-            _ => Poll::Ready(None),
+            State::Completed => Poll::Ready(None),
         }
     }
 }
