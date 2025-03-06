@@ -5,14 +5,14 @@ pub static TOKENIZED_OUTPUT: Lazy<Vec<String>> = Lazy::new(init_string);
 pub static MAX_TOKENS: Lazy<usize> = Lazy::new(|| TOKENIZED_OUTPUT.len());
 
 fn raw_string() -> String {
-    // load random.txt
-    fs::read_to_string("random.txt").expect("Should have been able to read the file")
+    fs::read_to_string("sonnet.txt").expect("Should have been able to read the file")
 }
 
 fn init_string() -> Vec<String> {
-    // load random.txt
     let contents = raw_string();
-    let tokenizer = tokenizers::Tokenizer::from_pretrained("meta-llama/Meta-Llama-3-8B", None)
+    #[cfg(feature = "tokens")]
+    {
+        let tokenizer = tokenizers::Tokenizer::from_pretrained("meta-llama/Meta-Llama-3-8B", None)
         .expect("Should have been able to load the tokenizer");
     // splitting by whitespace would work, but this gives a better representation of tokens
     log::info!("Loaded the tokenizer");
@@ -21,10 +21,16 @@ fn init_string() -> Vec<String> {
         .unwrap()
         .get_ids()
         .to_vec();
-    tokens
+    return tokens
         .iter()
         .map(|token| tokenizer.decode(&[*token], true).unwrap())
-        .collect::<Vec<String>>()
+        .collect::<Vec<String>>();
+    }
+    // tokenizers not found, so we split by whitespace
+    #[cfg(not(feature = "tokens"))]{
+    log::info!("Tokenizers not found, splitting by whitespace");
+    contents.split_whitespace().map(|s| s.to_string()).collect()
+    }
 }
 
 #[cfg(test)]
@@ -32,6 +38,8 @@ mod tests {
 
     #[test]
     fn test_init_string() {
+        #[cfg(feature = "tokens")]
+        {
         let tokenizer = tokenizers::Tokenizer::from_pretrained("meta-llama/Meta-Llama-3-8B", None)
             .expect("Should have been able to load the tokenizer");
         let contents = "This is a test";
@@ -45,5 +53,9 @@ mod tests {
             .map(|token| tokenizer.decode(&[*token], true).unwrap())
             .collect();
         println!("{:?}", clean_tokens);
+        }
+        let contents = "This is a test";
+        let tokens = contents.split_whitespace().map(|s| s.to_string()).collect::<Vec<String>>();
+        println!("{:?}", tokens);
     }
 }

@@ -27,7 +27,8 @@ async fn not_found() -> impl Responder {
 #[actix_web::main] // or #[tokio::main]
 async fn main() -> std::io::Result<()> {
     // init the global variable
-
+    
+    env_logger::init_from_env(Env::new().default_filter_or("warning"));
     let _ = common::TOKENIZED_OUTPUT.clone();
 
     let workers: usize = env::var("ACTIX_WORKERS")
@@ -43,9 +44,6 @@ async fn main() -> std::io::Result<()> {
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or(256);
-
-    // set default to warning
-    env_logger::init_from_env(Env::new().default_filter_or("warning"));
 
     HttpServer::new(|| {
         App::new()
