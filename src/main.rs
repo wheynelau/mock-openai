@@ -38,6 +38,12 @@ async fn main() -> std::io::Result<()> {
                 .map(|n| n.get())
                 .unwrap_or(1)
         });
+
+    let max_connection_rate = env::var("ACTIX_MAX_CONN_RATE")
+        .ok()
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(256);
+
     // set default to warning
     env_logger::init_from_env(Env::new().default_filter_or("warning"));
 
@@ -49,6 +55,7 @@ async fn main() -> std::io::Result<()> {
     })
     .client_request_timeout(Duration::from_secs(3600))
     .workers(workers)
+    .max_connection_rate(max_connection_rate)
     .bind(("127.0.0.1", 8079))?
     .run()
     .await
