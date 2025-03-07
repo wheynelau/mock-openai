@@ -130,9 +130,9 @@ async fn completions(_req: HttpRequest, payload: Request) -> Result<HttpResponse
         // This would require a wrapper or custom Impl for indexing
         // For now restrict as a safety
         let return_string = if max_tokens >= *MAX_TOKENS {
-            MAX_OUTPUT.clone()
+            &MAX_OUTPUT
         } else {
-            TOKENIZED_OUTPUT[..max_tokens].concat()
+            &TOKENIZED_OUTPUT[..max_tokens].concat()
         };
         substitute_template(&return_string, max_tokens, None)
     } else {

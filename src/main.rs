@@ -43,7 +43,7 @@ async fn main() -> std::io::Result<()> {
     // init the global variable
 
     env_logger::init_from_env(Env::new().default_filter_or("warning"));
-    let _ = common::TOKENIZED_OUTPUT.clone();
+    let _ = &common::TOKENIZED_OUTPUT;
 
     let args = args::get_args();
 
