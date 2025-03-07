@@ -17,8 +17,11 @@ This is an OpenAI compatible mock server for experimentation and testing.
 
 ## Installation
 
-Check the releases tab, note that you will need to download sonnets.txt into assets/sonnets.txt,  
-relative to the binary. 
+Check the releases tab. 
+
+**Note**: You will need to download sonnets.txt into assets/sonnets.txt, relative to the binary.
+The file is not included in the release. You can download the file [here](https://github.com/martin-gorner/tensorflow-rnn-shakespeare/blob/master/shakespeare/sonnets.txt)
+
 
 ### Cargo
 
