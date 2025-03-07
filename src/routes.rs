@@ -10,7 +10,7 @@ use std::convert::Infallible;
 
 use crate::stream::StringsStream;
 
-use crate::common::{MAX_TOKENS, TOKENIZED_OUTPUT};
+use crate::common::{MAX_TOKENS, TOKENIZED_OUTPUT, MAX_OUTPUT};
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Request {
     max_tokens: Option<usize>,
@@ -65,16 +65,16 @@ impl Default for Response {
     }
 }
 #[derive(Deserialize, Serialize, Debug, Default)]
-struct Usage {
-    prompt_tokens: i32,
-    completion_tokens: i32,
-    total_tokens: i32,
+pub struct Usage {
+    pub prompt_tokens: i32,
+    pub completion_tokens: i32,
+    pub total_tokens: i32,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Choice {
+    index: i32,
     text: String,
-    index: u64,
     logprobs: Option<f32>,
     finish_reason: String,
 }
@@ -131,11 +131,18 @@ async fn completions(_req: HttpRequest, payload: Request) -> Result<HttpResponse
     let response: String = if payload.max_tokens.is_some() {
         // Only slice if max_tokens is explicitly provided
         let max_tokens: usize = payload.max_tokens.unwrap();
-        let return_string = TOKENIZED_OUTPUT[..max_tokens].concat();
+        // TODO Allow users to request for max_tokens> MAX_TOKENS
+        // This would require a wrapper or custom Impl for indexing
+        // For now restrict as a safety
+        let return_string = if max_tokens >= *MAX_TOKENS {
+            MAX_OUTPUT.clone()
+        } else {
+            TOKENIZED_OUTPUT[..max_tokens].concat()
+        };
         substitute_template(&return_string, max_tokens, None)
     } else {
         // Use the full output when max_tokens is not specified
-        let return_string = TOKENIZED_OUTPUT.concat();
+        let return_string = MAX_OUTPUT.clone();
         substitute_template(&return_string, *MAX_TOKENS, None)
     };
 
@@ -146,7 +153,10 @@ async fn chat_completions(
     _req: HttpRequest,
     payload: Request,
 ) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, HttpError> {
+    // Same as above, restrict
+    // TODO: Implement max_tokens > MAX_TOKENS
     let max_tokens = payload.max_tokens.unwrap_or(*MAX_TOKENS);
+    let max_tokens = std::cmp::min(max_tokens, *MAX_TOKENS);
     let log_usage: bool = payload
         .stream_options
         .unwrap_or(StreamOptions {
@@ -173,4 +183,5 @@ mod tests {
         let baseline = serde_json::to_string(&baseline).unwrap();
         assert_eq!(response, baseline);
     }
+    // TODO: Implement tests for the response
 }

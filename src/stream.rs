@@ -6,6 +6,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::common::MAX_TOKENS;
+use crate::routes::Usage;
 
 enum State {
     Start,
@@ -74,12 +75,6 @@ impl Default for Delta {
             content: Some("".to_string()),
         }
     }
-}
-#[derive(Deserialize, Serialize, Debug, Default)]
-struct Usage {
-    prompt_tokens: i32,
-    completion_tokens: i32,
-    total_tokens: i32,
 }
 pub struct StringsStream {
     strings: Vec<String>,
