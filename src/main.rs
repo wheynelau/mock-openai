@@ -3,10 +3,10 @@ pub mod common;
 pub mod routes;
 pub mod stream;
 
-use actix_web::{HttpResponse, Responder, middleware::Logger};
+use actix_web::{get, middleware::Logger, post, HttpResponse, Responder};
 use env_logger::Env;
 
-use actix_web::{App, HttpServer, web};
+use actix_web::{web, App, HttpServer};
 
 fn configure(cfg: &mut web::ServiceConfig) {
     let scope = web::scope("/v1")
@@ -17,6 +17,16 @@ fn configure(cfg: &mut web::ServiceConfig) {
         );
 
     cfg.service(scope);
+}
+
+#[get("/hello")]
+async fn hello() -> impl Responder {
+    HttpResponse::Ok().body("Hello world!")
+}
+
+#[post("/echo")]
+async fn echo(req_body: String) -> impl Responder {
+    HttpResponse::Ok().body(req_body)
 }
 
 async fn not_found() -> impl Responder {
@@ -35,6 +45,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
+            .service(hello) // Test for get
+            .service(echo) // Test for post
             .configure(configure)
             .default_service(web::route().to(not_found))
     })

@@ -1,5 +1,5 @@
 use actix_web::Either;
-use actix_web::{HttpRequest, HttpResponse, error::HttpError, web};
+use actix_web::{error::HttpError, web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

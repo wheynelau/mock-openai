@@ -7,8 +7,12 @@ pub static MAX_TOKENS: Lazy<usize> = Lazy::new(|| TOKENIZED_OUTPUT.len());
 
 fn raw_string() -> String {
     let link = "https://raw.githubusercontent.com/martin-gorner/tensorflow-rnn-shakespeare/refs/heads/master/shakespeare/sonnets.txt";
-    fs::read_to_string("assets/sonnets.txt").unwrap_or_else(|_| panic!("File not found, please download it directly from {} and place it at assets/sonnet.txt",
-            link))
+    fs::read_to_string("assets/sonnets.txt").unwrap_or_else(|_| {
+        panic!(
+            "File not found, please download it directly from {} and place it at assets/sonnet.txt",
+            link
+        )
+    })
 }
 
 fn init_string() -> Vec<String> {
