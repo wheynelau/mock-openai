@@ -112,13 +112,23 @@ impl Stream for StringsStream {
         // If log usage is not enabled, it will switch to state::Done
         // Once it reaches state::Done, it will switch to state::Completed
 
+        // init a string for faster access
+        let response = StreamingChunkResponse::from_string("[INPUT]".to_string());
+        let output = serde_json::to_string(&response).unwrap();
+
         match this.state {
             State::Start => {
                 if this.index < this.max_tokens {
                     let string_item = this.strings[this.index].clone();
                     this.index += 1;
-                    let chunk = StreamingChunkResponse::from_string(string_item);
-                    let string_item = serde_json::to_string(&chunk).unwrap();
+                    // let chunk = StreamingChunkResponse::from_string(string_item);
+                    // let string_item = serde_json::to_string(&chunk).unwrap();
+                    let string_item = output.replace(
+                        "[INPUT]",
+                        serde_json::to_string(&string_item)
+                            .unwrap()
+                            .trim_matches('"'),
+                    );
                     Poll::Ready(Some(Ok(sse::Event::Data(sse::Data::new(string_item)))))
                 } else {
                     if this.include_usage {
@@ -165,5 +175,20 @@ impl Stream for StringsStream {
             }
             State::Completed => Poll::Ready(None),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_partial_struct() {
+        let response = StreamingChunkResponse::from_string("{INPUT}".to_string());
+        assert_eq!(response.choices.len(), 1);
+        let output = serde_json::to_string(&response).unwrap();
+        println!("{}", output);
+        // test format
+        println!("{}", output.replace("{INPUT}", "Hello World!"));
     }
 }
