@@ -4,6 +4,7 @@ use std::fs;
 // Initialise all the global variables here
 pub static TOKENIZED_OUTPUT: Lazy<Vec<String>> = Lazy::new(init_string);
 pub static MAX_TOKENS: Lazy<usize> = Lazy::new(|| TOKENIZED_OUTPUT.len());
+pub static MAX_OUTPUT: Lazy<String> = Lazy::new(|| TOKENIZED_OUTPUT.concat());
 
 fn raw_string() -> String {
     let link = "https://raw.githubusercontent.com/martin-gorner/tensorflow-rnn-shakespeare/refs/heads/master/shakespeare/sonnets.txt";
