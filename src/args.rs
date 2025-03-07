@@ -24,7 +24,7 @@ pub fn get_args() -> Args {
     let max_connection_rate = env::var("ACTIX_MAX_CONN_RATE")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(256);
+        .unwrap_or(512);
 
     let port = env::var("ACTIX_PORT")
         .ok()

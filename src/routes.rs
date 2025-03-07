@@ -91,6 +91,7 @@ impl Default for Choice {
 }
 
 static TEMPLATE: Lazy<String> = Lazy::new(init_template);
+static RE: Lazy<regex::Regex> = Lazy::new(|| regex::Regex::new(r"\[INPUT\]|\[MAX_TOKENS\]").unwrap());
 
 fn init_template() -> String {
     let max_tokens = i32::MAX;
@@ -101,9 +102,14 @@ fn init_template() -> String {
 }
 
 fn substitute_template(input: &str, max_tokens: usize, template: Option<&String>) -> String {
-    let template = template.unwrap_or_else(|| &TEMPLATE);
-    let response = template.replace("[INPUT]", input);
-    response.replace("[MAX_TOKENS]", &max_tokens.to_string())
+    let template = template.unwrap_or(&TEMPLATE);
+    RE.replace_all(template, |caps: &regex::Captures| {
+        match &caps[0] {
+            "[INPUT]" => input.to_string(),
+            "[MAX_TOKENS]" => max_tokens.to_string(),
+            _ => unreachable!(),
+        }
+    }).to_string()
 }
 // Use the same endpoint to allow the streaming
 pub async fn common_completions(
