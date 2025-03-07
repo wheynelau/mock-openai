@@ -100,8 +100,8 @@ fn init_template() -> String {
     out.replace(&max_tokens.to_string(), "[MAX_TOKENS]")
 }
 
-fn substitute_template(input: &str, max_tokens: usize, template: Option<String>) -> String {
-    let template = template.unwrap_or_else(|| TEMPLATE.clone());
+fn substitute_template(input: &str, max_tokens: usize, template: Option<&String>) -> String {
+    let template = template.unwrap_or_else(|| &TEMPLATE);
     let response = template.replace("[INPUT]", input);
     response.replace("[MAX_TOKENS]", &max_tokens.to_string())
 }
@@ -137,8 +137,8 @@ async fn completions(_req: HttpRequest, payload: Request) -> Result<HttpResponse
         substitute_template(&return_string, max_tokens, None)
     } else {
         // Use the full output when max_tokens is not specified
-        let return_string = MAX_OUTPUT.clone();
-        substitute_template(&return_string, *MAX_TOKENS, None)
+        let return_string = &MAX_OUTPUT;
+        substitute_template(return_string, *MAX_TOKENS, None)
     };
 
     Ok(HttpResponse::Ok().body(response))
@@ -158,7 +158,7 @@ async fn chat_completions(
             include_usage: false,
         })
         .include_usage;
-    let stream = StringsStream::new(TOKENIZED_OUTPUT.clone(), Some(max_tokens), log_usage);
+    let stream = StringsStream::new(&TOKENIZED_OUTPUT, Some(max_tokens), log_usage);
     Ok(Sse::from_stream(stream))
 }
 
@@ -175,7 +175,7 @@ mod tests {
             .trim_matches('"')
             .to_string();
         let max_tokens = 10;
-        let response = substitute_template(&input, max_tokens, Some(template));
+        let response = substitute_template(&input, max_tokens, Some(&template));
 
         let baseline = Response::from_response_string(String::from("\tHello World!"), 10);
         // serialize the baseline

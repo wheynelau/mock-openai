@@ -76,16 +76,16 @@ impl Default for Delta {
         }
     }
 }
-pub struct StringsStream {
-    strings: Vec<String>,
+pub struct StringsStream<'a> {
+    strings: &'a Vec<String>,
     index: usize,
     max_tokens: usize,
     include_usage: bool,
     state: State,
 }
 
-impl StringsStream {
-    pub fn new(strings: Vec<String>, max_tokens: Option<usize>, include_usage: bool) -> Self {
+impl<'a> StringsStream<'a> {
+    pub fn new(strings: &'a Vec<String>, max_tokens: Option<usize>, include_usage: bool) -> Self {
         StringsStream {
             strings,
             index: 0,
@@ -103,7 +103,7 @@ fn init_template() -> String {
     serde_json::to_string(&response).unwrap()
 }
 
-impl Stream for StringsStream {
+impl Stream for StringsStream<'_> {
     type Item = Result<sse::Event, std::convert::Infallible>;
 
     fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -122,11 +122,11 @@ impl Stream for StringsStream {
         match this.state {
             State::Start => {
                 if this.index < this.max_tokens {
-                    let string_item = this.strings[this.index].clone();
+                    let string_item = &this.strings[this.index];
                     this.index += 1;
                     // let chunk = StreamingChunkResponse::from_string(string_item);
                     // let string_item = serde_json::to_string(&chunk).unwrap();
-                    let string_item = TEMPLATE.replace("[INPUT]", &string_item);
+                    let string_item = TEMPLATE.replace("[INPUT]", string_item);
                     Poll::Ready(Some(Ok(sse::Event::Data(sse::Data::new(string_item)))))
                 } else {
                     if this.include_usage {
@@ -173,6 +173,10 @@ impl Stream for StringsStream {
             }
             State::Completed => Poll::Ready(None),
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, None)
     }
 }
 
