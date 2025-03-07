@@ -108,14 +108,14 @@ curl -N http://localhost:8079/v1/chat/completions \
 
 The server can be configured with the following environment variables:
 
-ACTIX_WORKERS=1: Number of workers to use. Default is 1.  
-PORT=8079: Port to listen on. Default is 8079.  
-ADDRESS=0.0.0.0: Address to listen on. Default is 0.0.0.0  
-ACTIX_MAX_CONN_RATE=256: Maximum connection rate. Default is 256 (Still testing this).  
-ACTIX_CLIENT_REQUEST_TIMEOUT=600: Request timeout for the client. Default is 600 seconds.  
+`ACTIX_WORKERS=1`: Number of workers to use. Default is 1.  
+`PORT=8079`: Port to listen on. Default is 8079.  
+`ADDRESS=0.0.0.0`: Address to listen on. Default is 0.0.0.0  
+`ACTIX_MAX_CONN_RATE=256`: Maximum connection rate. Default is 256 (Still testing this).  
+`ACTIX_CLIENT_REQUEST_TIMEOUT=600`: Request timeout for the client. Default is 600 seconds.  
 
-logging  
-RUST_LOG=info: Set the log level. Default is warning. 
+LOG    
+`RUST_LOG=info`: Set the log level. Default is warning. 
 
 ## TODO
 
