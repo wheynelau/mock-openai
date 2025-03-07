@@ -29,6 +29,11 @@ async fn echo(req_body: String) -> impl Responder {
     HttpResponse::Ok().body(req_body)
 }
 
+#[get("/tokens")]
+async fn get_max_tokens() -> impl Responder {
+    HttpResponse::Ok().body(format!("Max tokens: {}", *common::MAX_TOKENS))
+}
+
 async fn not_found() -> impl Responder {
     HttpResponse::NotFound().body("Not Found")
 }
@@ -47,6 +52,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .service(hello) // Test for get
             .service(echo) // Test for post
+            .service(get_max_tokens) // Allows users to get the max tokens
             .configure(configure)
             .default_service(web::route().to(not_found))
     })

@@ -10,7 +10,7 @@ use std::convert::Infallible;
 
 use crate::stream::StringsStream;
 
-use crate::common::{MAX_TOKENS, TOKENIZED_OUTPUT, MAX_OUTPUT};
+use crate::common::{MAX_OUTPUT, MAX_TOKENS, TOKENIZED_OUTPUT};
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Request {
     max_tokens: Option<usize>,
