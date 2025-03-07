@@ -1,7 +1,7 @@
 [package]
 name = "mock-openai"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 repository = "https://github.com/wheynelau/mock-openai"
 description = "A mock OpenAI API server for testing purposes"
 license = "MIT"
