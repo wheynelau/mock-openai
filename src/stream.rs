@@ -1,5 +1,6 @@
 use actix_web_lab::sse;
 use futures_util::stream::Stream;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -100,6 +101,13 @@ impl StringsStream {
     }
 }
 
+static TEMPLATE: Lazy<String> = Lazy::new(init_template);
+
+fn init_template() -> String {
+    let response = StreamingChunkResponse::from_string("[INPUT]".to_string());
+    serde_json::to_string(&response).unwrap()
+}
+
 impl Stream for StringsStream {
     type Item = Result<sse::Event, std::convert::Infallible>;
 
@@ -113,8 +121,8 @@ impl Stream for StringsStream {
         // Once it reaches state::Done, it will switch to state::Completed
 
         // init a string for faster access
-        let response = StreamingChunkResponse::from_string("[INPUT]".to_string());
-        let output = serde_json::to_string(&response).unwrap();
+        // let response = StreamingChunkResponse::from_string("[INPUT]".to_string());
+        // let output = serde_json::to_string(&response).unwrap();
 
         match this.state {
             State::Start => {
@@ -123,7 +131,7 @@ impl Stream for StringsStream {
                     this.index += 1;
                     // let chunk = StreamingChunkResponse::from_string(string_item);
                     // let string_item = serde_json::to_string(&chunk).unwrap();
-                    let string_item = output.replace(
+                    let string_item = TEMPLATE.replace(
                         "[INPUT]",
                         serde_json::to_string(&string_item)
                             .unwrap()

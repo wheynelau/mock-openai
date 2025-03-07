@@ -1,5 +1,6 @@
 use actix_web::Either;
 use actix_web::{error::HttpError, web, HttpRequest, HttpResponse};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -88,6 +89,27 @@ impl Default for Choice {
         }
     }
 }
+
+static TEMPLATE: Lazy<String> = Lazy::new(init_template);
+
+fn init_template() -> String {
+    let max_tokens = i32::MAX;
+    let response = Response::from_response_string(String::from("[INPUT]"), max_tokens as usize);
+    let out = serde_json::to_string(&response).unwrap();
+    // replace maxtokens with a placeholder
+    out.replace(&max_tokens.to_string(), "[MAX_TOKENS]")
+}
+
+fn substitute_template(input: &str, max_tokens: usize, template: Option<String>) -> String {
+    let template = template.unwrap_or_else(|| TEMPLATE.clone());
+    let response = template.replace(
+        "[INPUT]",
+        serde_json::to_string(input)
+            .unwrap_or(String::from(""))
+            .trim_matches('"'),
+    );
+    response.replace("[MAX_TOKENS]", &max_tokens.to_string())
+}
 // Use the same endpoint to allow the streaming
 pub async fn common_completions(
     _req: HttpRequest,
@@ -106,18 +128,18 @@ pub async fn common_completions(
 async fn completions(_req: HttpRequest, payload: Request) -> Result<HttpResponse, HttpError> {
     // This returns the string
     // check if there is max_tokens inside the payload
-    let response: Response = if payload.max_tokens.is_some() {
+    let response: String = if payload.max_tokens.is_some() {
         // Only slice if max_tokens is explicitly provided
-        let max_tokens = payload.max_tokens.unwrap();
-        let return_string = TOKENIZED_OUTPUT[..max_tokens].join("");
-        Response::from_response_string(return_string, max_tokens)
+        let max_tokens: usize = payload.max_tokens.unwrap();
+        let return_string = TOKENIZED_OUTPUT[..max_tokens].concat();
+        substitute_template(&return_string, max_tokens, None)
     } else {
         // Use the full output when max_tokens is not specified
-        let return_string = TOKENIZED_OUTPUT.join("");
-        Response::from_response_string(return_string, *MAX_TOKENS)
+        let return_string = TOKENIZED_OUTPUT.concat();
+        substitute_template(&return_string, *MAX_TOKENS, None)
     };
 
-    Ok(HttpResponse::Ok().json(response))
+    Ok(HttpResponse::Ok().body(response))
 }
 
 async fn chat_completions(
@@ -133,4 +155,22 @@ async fn chat_completions(
         .include_usage;
     let stream = StringsStream::new(TOKENIZED_OUTPUT.clone(), Some(max_tokens), log_usage);
     Ok(Sse::from_stream(stream))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_partial_struct() {
+        let template = init_template();
+        let input = "\tHello World!";
+        let max_tokens = 10;
+        let response = substitute_template(input, max_tokens, Some(template));
+
+        let baseline = Response::from_response_string(String::from("\tHello World!"), 10);
+        // serialize the baseline
+        let baseline = serde_json::to_string(&baseline).unwrap();
+        assert_eq!(response, baseline);
+    }
 }
