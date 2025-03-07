@@ -33,6 +33,7 @@ fn init_string() -> Vec<String> {
         tokens
             .iter()
             .map(|token| tokenizer.decode(&[*token], true).unwrap())
+            .map(|s| serde_json::to_string(&s).unwrap().trim_matches('"').into()) // Escape the strings
             .collect::<Vec<String>>()
     } else {
         // fall back to a simple whitespace tokenizer

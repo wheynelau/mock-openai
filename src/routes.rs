@@ -102,12 +102,7 @@ fn init_template() -> String {
 
 fn substitute_template(input: &str, max_tokens: usize, template: Option<String>) -> String {
     let template = template.unwrap_or_else(|| TEMPLATE.clone());
-    let response = template.replace(
-        "[INPUT]",
-        serde_json::to_string(input)
-            .unwrap_or(String::from(""))
-            .trim_matches('"'),
-    );
+    let response = template.replace("[INPUT]", input);
     response.replace("[MAX_TOKENS]", &max_tokens.to_string())
 }
 // Use the same endpoint to allow the streaming
@@ -175,8 +170,12 @@ mod tests {
     fn test_build_partial_struct() {
         let template = init_template();
         let input = "\tHello World!";
+        let input = serde_json::to_string(&input)
+            .unwrap()
+            .trim_matches('"')
+            .to_string();
         let max_tokens = 10;
-        let response = substitute_template(input, max_tokens, Some(template));
+        let response = substitute_template(&input, max_tokens, Some(template));
 
         let baseline = Response::from_response_string(String::from("\tHello World!"), 10);
         // serialize the baseline

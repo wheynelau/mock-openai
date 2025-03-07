@@ -126,12 +126,7 @@ impl Stream for StringsStream {
                     this.index += 1;
                     // let chunk = StreamingChunkResponse::from_string(string_item);
                     // let string_item = serde_json::to_string(&chunk).unwrap();
-                    let string_item = TEMPLATE.replace(
-                        "[INPUT]",
-                        serde_json::to_string(&string_item)
-                            .unwrap()
-                            .trim_matches('"'),
-                    );
+                    let string_item = TEMPLATE.replace("[INPUT]", &string_item);
                     Poll::Ready(Some(Ok(sse::Event::Data(sse::Data::new(string_item)))))
                 } else {
                     if this.include_usage {
