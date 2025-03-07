@@ -8,14 +8,17 @@
     - [Python](#python)
     - [Curl](#curl)
   - [Configuration](#configuration)
+  - [TODO](#todo)
+  - [Contributing](#contributing)
 
 ## Description
 
-This is an OpenAI compatible mock server for testing purposes. Mostly meant for throughput testing.
+This is an OpenAI compatible mock server for experimentation and testing.  
 
 ## Installation
 
-Binaries in progress...
+Check the releases tab, note that you will need to download sonnets.txt into assets/sonnets.txt,  
+relative to the binary. 
 
 ### Cargo
 
@@ -55,7 +58,7 @@ response = client.chat.completions.create(
     temperature=0,
     max_tokens=10,
 )
-print(response.choices[0].text)
+print(response)
 
 # streaming
 response = client.chat.completions.create(
@@ -64,7 +67,7 @@ response = client.chat.completions.create(
         {'role': 'user', 'content': "What's 1+1? Answer in one word."}
     ],
     temperature=0,
-    max_tokens=2,
+    max_tokens=10,
     stream=True,
     stream_options= {"include_usage": True}
 
@@ -117,3 +120,9 @@ RUST_LOG=info: Set the log level. Default is warning.
 ## TODO
 
 - Optimise it further
+- Cleanup the structs
+
+## Contributing
+
+Please feel free to raise any issues or PRs.  
+However as this is just a toy project, I may not have the time to maintain it.  
