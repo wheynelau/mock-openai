@@ -113,3 +113,7 @@ ACTIX_CLIENT_REQUEST_TIMEOUT=600: Request timeout for the client. Default is 600
 
 logging  
 RUST_LOG=info: Set the log level. Default is warning. 
+
+## TODO
+
+- Optimise it further
