@@ -91,7 +91,8 @@ impl Default for Choice {
 }
 
 static TEMPLATE: Lazy<String> = Lazy::new(init_template);
-static RE: Lazy<regex::Regex> = Lazy::new(|| regex::Regex::new(r"\[INPUT\]|\[MAX_TOKENS\]").unwrap());
+static RE: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"\[INPUT\]|\[MAX_TOKENS\]").unwrap());
 
 fn init_template() -> String {
     let max_tokens = i32::MAX;
@@ -103,13 +104,12 @@ fn init_template() -> String {
 
 fn substitute_template(input: &str, max_tokens: usize, template: Option<&String>) -> String {
     let template = template.unwrap_or(&TEMPLATE);
-    RE.replace_all(template, |caps: &regex::Captures| {
-        match &caps[0] {
-            "[INPUT]" => input.to_string(),
-            "[MAX_TOKENS]" => max_tokens.to_string(),
-            _ => unreachable!(),
-        }
-    }).to_string()
+    RE.replace_all(template, |caps: &regex::Captures| match &caps[0] {
+        "[INPUT]" => input.to_string(),
+        "[MAX_TOKENS]" => max_tokens.to_string(),
+        _ => unreachable!(),
+    })
+    .to_string()
 }
 // Use the same endpoint to allow the streaming
 pub async fn common_completions(
@@ -140,7 +140,7 @@ async fn completions(_req: HttpRequest, payload: Request) -> Result<HttpResponse
         } else {
             &TOKENIZED_OUTPUT[..max_tokens].concat()
         };
-        substitute_template(&return_string, max_tokens, None)
+        substitute_template(return_string, max_tokens, None)
     } else {
         // Use the full output when max_tokens is not specified
         let return_string = &MAX_OUTPUT;

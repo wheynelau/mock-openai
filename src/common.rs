@@ -34,7 +34,10 @@ fn init_string() -> Vec<&'static str> {
             .iter()
             .map(|token| {
                 let token = tokenizer.decode(&[*token], true).unwrap();
-                let token = serde_json::to_string(&token).unwrap().trim_matches('"').to_string();
+                let token = serde_json::to_string(&token)
+                    .unwrap()
+                    .trim_matches('"')
+                    .to_string();
                 let token: &'static str = Box::leak(token.into_boxed_str());
                 token
             })
@@ -42,10 +45,13 @@ fn init_string() -> Vec<&'static str> {
     } else {
         // fall back to a simple whitespace tokenizer
         log::error!("Failed to load the tokenizer, falling back to a simple whitespace tokenizer");
-        contents.split_whitespace().map(|s|{
-            let s: &'static str = Box::leak(s.to_string().into_boxed_str());
-            s}
-        ).collect()
+        contents
+            .split_whitespace()
+            .map(|s| {
+                let s: &'static str = Box::leak(s.to_string().into_boxed_str());
+                s
+            })
+            .collect()
     }
 }
 
@@ -53,31 +59,11 @@ fn init_string() -> Vec<&'static str> {
 mod tests {
     use super::*;
     #[test]
-    fn test_init_string() {
-        // to be implemented
-        let tokenizer = tokenizers::Tokenizer::from_pretrained(
-            "NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-            None,
-        )
-        .expect("Should have been able to load the tokenizer");
-        let contents = "This is a test";
-        let tokens = tokenizer
-            .encode(contents, false)
-            .unwrap()
-            .get_ids()
-            .to_vec();
-        let clean_tokens: Vec<String> = tokens
-            .iter()
-            .map(|token| tokenizer.decode(&[*token], true).unwrap())
-            .collect();
-        println!("{:?}", clean_tokens);
-    }
-    #[test]
-    fn test_init_string_template () {
+    fn test_init_string_template() {
         // sanity check that the strings are the same
         let baseline = raw_string();
         // because the tokens are escaped
-        let baseline =  serde_json::to_string(&baseline)
+        let baseline = serde_json::to_string(&baseline)
             .unwrap()
             .trim_matches('"')
             .to_string();

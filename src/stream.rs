@@ -1,13 +1,13 @@
 use actix_web_lab::sse;
 use futures_util::stream::Stream;
 use once_cell::sync::Lazy;
+use rand::rngs::ThreadRng;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use tokio::time::Sleep;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use rand::rngs::ThreadRng;
+use tokio::time::Sleep;
 
 use crate::common::MAX_TOKENS;
 use crate::routes::Usage;
@@ -58,6 +58,8 @@ impl StreamingChunkResponse {
         }
     }
 }
+// TODO
+// this can be combined with the one in routes.rs
 #[derive(Deserialize, Serialize, Debug, Default)]
 struct Choice {
     index: i32,
@@ -114,18 +116,20 @@ fn init_template() -> String {
 impl Stream for StringsStream<'_> {
     type Item = Result<sse::Event, std::convert::Infallible>;
 
+    // high level
+    // Starts with state::Input
+    // switch to state::Start after a random delay
+    // Once it reaches the end of the strings, it will switch to state::Usage if log usage is enabled
+    // After state::Usage, it will switch to state::Done
+    // If log usage is not enabled, it will switch to state::Done
+    // Once it reaches state::Done, it will switch to state::Completed
+
+    // init a string for faster access
+    // let response = StreamingChunkResponse::from_string("[INPUT]".to_string());
+    // let output = serde_json::to_string(&response).unwrap();
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = &mut *self;
-        // high level
-        // Starts with state::Start
-        // Once it reaches the end of the strings, it will switch to state::Usage if log usage is enabled
-        // After state::Usage, it will switch to state::Done
-        // If log usage is not enabled, it will switch to state::Done
-        // Once it reaches state::Done, it will switch to state::Completed
 
-        // init a string for faster access
-        // let response = StreamingChunkResponse::from_string("[INPUT]".to_string());
-        // let output = serde_json::to_string(&response).unwrap();
         if let Some(sleep) = &mut this.sleep {
             if Pin::new(sleep).poll(cx).is_pending() {
                 return Poll::Pending;
@@ -134,19 +138,23 @@ impl Stream for StringsStream<'_> {
         }
 
         match this.state {
-            State:: Input => {
+            State::Input => {
                 // Input gives a fake TTFT
                 // that is your initial delay from the LLM processing the tokens
                 // this can typically be long
                 let rand = this.rng.random_range(500..1000);
-                this.sleep = Some(Box::pin(tokio::time::sleep(tokio::time::Duration::from_millis(rand))));
+                this.sleep = Some(Box::pin(tokio::time::sleep(
+                    tokio::time::Duration::from_millis(rand),
+                )));
                 this.state = State::Start;
                 Poll::Pending
             }
             State::Start => {
                 if this.index < this.max_tokens {
                     let rand = this.rng.random_range(50..100);
-                    this.sleep = Some(Box::pin(tokio::time::sleep(tokio::time::Duration::from_millis(rand))));
+                    this.sleep = Some(Box::pin(tokio::time::sleep(
+                        tokio::time::Duration::from_millis(rand),
+                    )));
                     let string_item = &this.strings[this.index];
                     this.index += 1;
                     // let chunk = StreamingChunkResponse::from_string(string_item);
