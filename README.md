@@ -5,6 +5,7 @@
   - [Installation](#installation)
     - [Cargo](#cargo)
   - [Usage](#usage)
+    - [Endpoints](#endpoints)
     - [Python](#python)
     - [Curl](#curl)
   - [Testing](#testing)
@@ -47,6 +48,18 @@ mock-openai
 ```
 
 The server will start on `localhost:8079` by default. You can change the port by setting the `PORT` environment variable.
+
+### Endpoints
+
+The server has the basic OpenAI compatible endpoints. They both route to the same handler internally  
+and take in the same parameters.
+
+- `POST /v1/chat/completions`: Chat completions endpoint.
+- `POST /v1/completions`: Completions endpoint.
+- `POST /echo`: Echo endpoint for testing.
+
+- `GET /tokens`: Get the max tokens, this is the default `max_tokens` if you don't pass it in the request.
+- `GET /hello`: Hello world endpoint.
 
 ### Python 
 
