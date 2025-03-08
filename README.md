@@ -7,6 +7,7 @@
   - [Usage](#usage)
     - [Python](#python)
     - [Curl](#curl)
+  - [Testing](#testing)
   - [Configuration](#configuration)
   - [TODO](#todo)
   - [Contributing](#contributing)
@@ -105,6 +106,14 @@ curl -N http://localhost:8079/v1/chat/completions \
     "stream": true,
     "stream_options": { "include_usage": true }
   }'
+```
+
+## Testing
+
+oha works well on the non streaming endpoint, but seems to error out on the streaming endpoint after adding the sleeps.
+
+```bash
+oha -z 10s -c 2000 -q 2000  --latency-correction --disable-keepalive http://localhost:8079/v1/chat/completions -T application/json -d '{"stream":false}' -m POST
 ```
 
 ## Configuration

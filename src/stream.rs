@@ -83,7 +83,7 @@ impl Default for Delta {
     }
 }
 pub struct StringsStream<'a> {
-    strings: &'a Vec<String>,
+    strings: &'a Vec<&'a str>,
     index: usize,
     max_tokens: usize,
     include_usage: bool,
@@ -93,13 +93,13 @@ pub struct StringsStream<'a> {
 }
 
 impl<'a> StringsStream<'a> {
-    pub fn new(strings: &'a Vec<String>, max_tokens: Option<usize>, include_usage: bool) -> Self {
+    pub fn new(strings: &'a Vec<&'a str>, max_tokens: Option<usize>, include_usage: bool) -> Self {
         StringsStream {
             strings,
             index: 0,
             max_tokens: max_tokens.unwrap_or(*MAX_TOKENS),
             include_usage,
-            state: State::Start,
+            state: State::Input,
             sleep: None,
             rng: rand::rng(),
         }
