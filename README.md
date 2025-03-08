@@ -142,8 +142,9 @@ LOG
 
 ## TODO
 
-- Optimise it further
+- Optimise it further (How??)
 - Cleanup the structs
+- Considering downloading the sonnets within the code itself, wait for request
 
 ## Contributing
 
