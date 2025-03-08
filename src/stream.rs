@@ -1,14 +1,20 @@
 use actix_web_lab::sse;
 use futures_util::stream::Stream;
 use once_cell::sync::Lazy;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
+use tokio::time::Sleep;
+use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use rand::rngs::ThreadRng;
 
 use crate::common::MAX_TOKENS;
 use crate::routes::Usage;
 
+static TEMPLATE: Lazy<String> = Lazy::new(init_template);
 enum State {
+    Input,
     Start,
     Done,
     Usage,
@@ -82,6 +88,8 @@ pub struct StringsStream<'a> {
     max_tokens: usize,
     include_usage: bool,
     state: State,
+    sleep: Option<Pin<Box<Sleep>>>,
+    rng: ThreadRng,
 }
 
 impl<'a> StringsStream<'a> {
@@ -92,11 +100,11 @@ impl<'a> StringsStream<'a> {
             max_tokens: max_tokens.unwrap_or(*MAX_TOKENS),
             include_usage,
             state: State::Start,
+            sleep: None,
+            rng: rand::rng(),
         }
     }
 }
-
-static TEMPLATE: Lazy<String> = Lazy::new(init_template);
 
 fn init_template() -> String {
     let response = StreamingChunkResponse::from_string("[INPUT]".to_string());
@@ -106,7 +114,7 @@ fn init_template() -> String {
 impl Stream for StringsStream<'_> {
     type Item = Result<sse::Event, std::convert::Infallible>;
 
-    fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = &mut *self;
         // high level
         // Starts with state::Start
@@ -118,10 +126,27 @@ impl Stream for StringsStream<'_> {
         // init a string for faster access
         // let response = StreamingChunkResponse::from_string("[INPUT]".to_string());
         // let output = serde_json::to_string(&response).unwrap();
+        if let Some(sleep) = &mut this.sleep {
+            if Pin::new(sleep).poll(cx).is_pending() {
+                return Poll::Pending;
+            }
+            this.sleep = None;
+        }
 
         match this.state {
+            State:: Input => {
+                // Input gives a fake TTFT
+                // that is your initial delay from the LLM processing the tokens
+                // this can typically be long
+                let rand = this.rng.random_range(500..1000);
+                this.sleep = Some(Box::pin(tokio::time::sleep(tokio::time::Duration::from_millis(rand))));
+                this.state = State::Start;
+                Poll::Pending
+            }
             State::Start => {
                 if this.index < this.max_tokens {
+                    let rand = this.rng.random_range(50..100);
+                    this.sleep = Some(Box::pin(tokio::time::sleep(tokio::time::Duration::from_millis(rand))));
                     let string_item = &this.strings[this.index];
                     this.index += 1;
                     // let chunk = StreamingChunkResponse::from_string(string_item);
