@@ -23,6 +23,11 @@ Check the releases tab.
 **Note**: You will need to download sonnets.txt into assets/sonnets.txt, relative to the binary.
 The file is not included in the release. You can download the file [here](https://github.com/martin-gorner/tensorflow-rnn-shakespeare/blob/master/shakespeare/sonnets.txt)
 
+```bash
+# quick commands
+mkdir -p assets
+wget -O assets/sonnets.txt https://raw.githubusercontent.com/martin-gorner/tensorflow-rnn-shakespeare/master/shakespeare/sonnets.txt
+```
 
 ### Cargo
 
@@ -112,8 +117,14 @@ curl -N http://localhost:8079/v1/chat/completions \
 
 oha works well on the non streaming endpoint, but seems to error out on the streaming endpoint after adding the sleeps.
 
+When the below tested on a t2.nano instance with 1 vcpu and 0.5GB of memory, the node was happy at about 50% CPU usage. But due to the  
+network throttles, it occasionally falls to 10% CPU usage and the throughput decreases. Note that streaming does not work with oha.
+For stable testing, its recommended to use an instance with fixed resources. 
+
 ```bash
-oha -z 10s -c 2000 -q 2000  --latency-correction --disable-keepalive http://localhost:8079/v1/chat/completions -T application/json -d '{"stream":false}' -m POST
+oha -z 10m -c 512 -q 3000  --latency-correction --disable-keepalive \
+  -T application/json -d '{"stream":false, "max_tokens": 2048}' -m POST \
+  http://IP_ADDRESS/v1/chat/completions
 ```
 
 ## Configuration
