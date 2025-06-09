@@ -1,25 +1,28 @@
-use actix_web::Either;
-use actix_web::{error::HttpError, web, HttpRequest, HttpResponse};
+use axum::{
+    extract::Json,
+    http::StatusCode,
+    response::{sse::Event, sse::Sse, IntoResponse},
+};
+use futures_util::Stream;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-use actix_web_lab::sse::{self, Sse};
-use futures_util::Stream;
 use std::convert::Infallible;
+use tokio_stream::StreamExt;
 
 use crate::stream::StringsStream;
 
 use crate::common::{MAX_OUTPUT, MAX_TOKENS, TOKENIZED_OUTPUT};
+
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Request {
     max_tokens: Option<usize>,
-    // extras
     stream: Option<bool>,
     stream_options: Option<StreamOptions>,
     #[serde(flatten)]
     extra: serde_json::Map<String, Value>,
 }
+
 #[derive(Deserialize, Serialize, Debug)]
 struct StreamOptions {
     include_usage: bool,
@@ -64,6 +67,7 @@ impl Default for Response {
         }
     }
 }
+
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct Usage {
     pub prompt_tokens: i32,
@@ -98,7 +102,6 @@ fn init_template() -> String {
     let max_tokens = i32::MAX;
     let response = Response::from_response_string(String::from("[INPUT]"), max_tokens as usize);
     let out = serde_json::to_string(&response).unwrap();
-    // replace maxtokens with a placeholder
     out.replace(&max_tokens.to_string(), "[MAX_TOKENS]")
 }
 
@@ -111,51 +114,39 @@ fn substitute_template(input: &str, max_tokens: usize, template: Option<&String>
     })
     .to_string()
 }
-// Use the same endpoint to allow the streaming
-pub async fn common_completions(
-    _req: HttpRequest,
-    payload: web::Json<Request>,
-) -> Result<Either<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, HttpResponse>, HttpError>
-{
-    // Return Either Left -> streaming, Right-> normal
-    let payload = payload.into_inner();
-    // route to streaming
+
+pub async fn common_completions(Json(payload): Json<Request>) -> impl IntoResponse {
     match payload.stream {
-        Some(true) => Ok(Either::Left(chat_completions(_req, payload).await?)),
-        _ => Ok(Either::Right(completions(_req, payload).await?)),
+        Some(true) => match chat_completions(payload).await {
+            Ok(stream) => Sse::new(stream).into_response(),
+            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Stream error").into_response(),
+        },
+        _ => match completions(payload).await {
+            Ok(response) => (StatusCode::OK, response).into_response(),
+            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Completion error").into_response(),
+        },
     }
 }
 
-async fn completions(_req: HttpRequest, payload: Request) -> Result<HttpResponse, HttpError> {
-    // This returns the string
-    // check if there is max_tokens inside the payload
-    let response: String = if payload.max_tokens.is_some() {
-        // Only slice if max_tokens is explicitly provided
+async fn completions(payload: Request) -> Result<String, ()> {
+    let response = if payload.max_tokens.is_some() {
         let max_tokens: usize = payload.max_tokens.unwrap();
-        // TODO Allow users to request for max_tokens> MAX_TOKENS
-        // This would require a wrapper or custom Impl for indexing
-        // For now restrict as a safety
         let return_string = if max_tokens >= *MAX_TOKENS {
-            &MAX_OUTPUT
+            MAX_OUTPUT.to_string()
         } else {
-            &TOKENIZED_OUTPUT[..max_tokens].concat()
+            TOKENIZED_OUTPUT[..max_tokens].join("")
         };
-        substitute_template(return_string, max_tokens, None)
+        substitute_template(&return_string, max_tokens, None)
     } else {
-        // Use the full output when max_tokens is not specified
-        let return_string = &MAX_OUTPUT;
-        substitute_template(return_string, *MAX_TOKENS, None)
+        substitute_template(&MAX_OUTPUT, *MAX_TOKENS, None)
     };
 
-    Ok(HttpResponse::Ok().body(response))
+    Ok(response)
 }
 
 async fn chat_completions(
-    _req: HttpRequest,
     payload: Request,
-) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, HttpError> {
-    // Same as above, restrict
-    // TODO: Implement max_tokens > MAX_TOKENS
+) -> Result<impl Stream<Item = Result<Event, Infallible>>, ()> {
     let max_tokens = payload.max_tokens.unwrap_or(*MAX_TOKENS);
     let max_tokens = std::cmp::min(max_tokens, *MAX_TOKENS);
     let log_usage: bool = payload
@@ -164,8 +155,11 @@ async fn chat_completions(
             include_usage: false,
         })
         .include_usage;
-    let stream = StringsStream::new(&TOKENIZED_OUTPUT, Some(max_tokens), log_usage);
-    Ok(Sse::from_stream(stream))
+
+    let stream = StringsStream::new(TOKENIZED_OUTPUT.as_slice(), Some(max_tokens), log_usage)
+        .map(|data| Ok(Event::default().data(data)));
+
+    Ok(stream)
 }
 
 #[cfg(test)]
@@ -184,9 +178,7 @@ mod tests {
         let response = substitute_template(&input, max_tokens, Some(&template));
 
         let baseline = Response::from_response_string(String::from("\tHello World!"), 10);
-        // serialize the baseline
         let baseline = serde_json::to_string(&baseline).unwrap();
         assert_eq!(response, baseline);
     }
-    // TODO: Implement tests for the response
 }

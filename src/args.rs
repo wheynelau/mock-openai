@@ -12,7 +12,7 @@ pub struct Args {
 }
 
 pub fn get_args() -> Args {
-    let workers: usize = env::var("ACTIX_WORKERS")
+    let workers: usize = env::var("SERVER_WORKERS")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or_else(|| {
@@ -21,21 +21,21 @@ pub fn get_args() -> Args {
                 .unwrap_or(1)
         });
 
-    let max_connection_rate = env::var("ACTIX_MAX_CONN_RATE")
+    let max_connection_rate = env::var("SERVER_MAX_CONN_RATE")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or(512);
 
-    let port = env::var("ACTIX_PORT")
+    let port = env::var("SERVER_PORT")
         .ok()
         .and_then(|s| s.parse::<u16>().ok())
         .unwrap_or(8079);
 
-    let address = env::var("ACTIX_ADDRESS")
+    let address = env::var("SERVER_ADDRESS")
         .ok()
         .unwrap_or("0.0.0.0".to_string());
 
-    let client_request_timeout: Duration = env::var("ACTIX_CLIENT_REQUEST_TIMEOUT")
+    let client_request_timeout: Duration = env::var("SERVER_CLIENT_REQUEST_TIMEOUT")
         .ok()
         .and_then(|s| s.parse::<u64>().ok())
         .map(Duration::from_secs)

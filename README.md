@@ -47,7 +47,7 @@ cargo run --release
 mock-openai
 ```
 
-The server will start on `localhost:8079` by default. You can change the port by setting the `PORT` environment variable.
+The server will start on `localhost:8079` by default. You can change the port by setting the `SERVER_PORT` environment variable.
 
 ### Endpoints
 
@@ -144,13 +144,12 @@ oha -z 10m -c 512 -q 3000  --latency-correction --disable-keepalive \
 
 The server can be configured with the following environment variables:
 
-`ACTIX_WORKERS=1`: Number of workers to use. Default is 1.  
-`PORT=8079`: Port to listen on. Default is 8079.  
-`ADDRESS=0.0.0.0`: Address to listen on. Default is 0.0.0.0  
-`ACTIX_MAX_CONN_RATE=256`: Maximum connection rate. Default is 256 (Still testing this).  
-`ACTIX_CLIENT_REQUEST_TIMEOUT=600`: Request timeout for the client. Default is 600 seconds.  
+`SERVER_WORKERS`: Number of workers to use. Default is the number of available CPU cores.  
+`SERVER_PORT=8079`: Port to listen on. Default is 8079.  
+`SERVER_ADDRESS=0.0.0.0`: Address to listen on. Default is 0.0.0.0  
+`SERVER_MAX_CONN_RATE=512`: Maximum connection rate. Default is 512.  
+`SERVER_CLIENT_REQUEST_TIMEOUT=600`: Request timeout for the client. Default is 600 seconds.  
 
-LOG    
 `RUST_LOG=info`: Set the log level. Default is warning. 
 
 ## TODO
@@ -162,4 +161,4 @@ LOG
 ## Contributing
 
 Please feel free to raise any issues or PRs.  
-However as this is just a toy project, I may not have the time to maintain it.  
+However as this is just a toy project, I may not have the time to maintain it.
