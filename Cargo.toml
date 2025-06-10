@@ -30,3 +30,6 @@ tokio = { version = "1.45.1", features = ["full"] }
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
+[dist]
+allow-dirty = ["ci"]
