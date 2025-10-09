@@ -1,5 +1,3 @@
-// not really args, but putting this here if i choose to go with clap crate
-
 use std::env;
 use std::time::Duration;
 
@@ -9,6 +7,7 @@ pub struct Args {
     pub port: u16,
     pub address: String,
     pub client_request_timeout: std::time::Duration,
+    pub download_sonnets: bool,
 }
 
 pub fn get_args() -> Args {
@@ -41,11 +40,17 @@ pub fn get_args() -> Args {
         .map(Duration::from_secs)
         .unwrap_or(Duration::from_secs(600));
 
+    let download_sonnets = env::var("DOWNLOAD_SONNETS")
+        .ok()
+        .and_then(|s| s.parse::<bool>().ok())
+        .unwrap_or(false);
+
     Args {
         workers,
         max_connection_rate,
         port,
         address,
         client_request_timeout,
+        download_sonnets,
     }
 }

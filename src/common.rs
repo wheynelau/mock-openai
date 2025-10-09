@@ -1,16 +1,46 @@
 use once_cell::sync::Lazy;
 use std::fs;
+use std::path::Path;
 
 // Initialise all the global variables here
 pub static TOKENIZED_OUTPUT: Lazy<Vec<String>> = Lazy::new(init_string);
 pub static MAX_TOKENS: Lazy<usize> = Lazy::new(|| TOKENIZED_OUTPUT.len());
 pub static MAX_OUTPUT: Lazy<String> = Lazy::new(|| TOKENIZED_OUTPUT.join(""));
 
+pub async fn download_sonnets() -> Result<(), Box<dyn std::error::Error>> {
+    let link = "https://raw.githubusercontent.com/martin-gorner/tensorflow-rnn-shakespeare/refs/heads/master/shakespeare/sonnets.txt";
+    let path = "assets/sonnets.txt";
+
+    // Create assets directory if it doesn't exist
+    if !Path::new("assets").exists() {
+        fs::create_dir("assets")?;
+    }
+
+    // Check if file already exists
+    if Path::new(path).exists() {
+        println!("sonnets.txt already exists at {}", path);
+        return Ok(());
+    }
+
+    println!("Downloading sonnets.txt from {}...", link);
+
+    let response = reqwest::get(link).await?;
+    if !response.status().is_success() {
+        return Err(format!("Failed to download: HTTP {}", response.status()).into());
+    }
+
+    let content = response.text().await?;
+    fs::write(path, content)?;
+
+    println!("Successfully downloaded sonnets.txt to {}", path);
+    Ok(())
+}
+
 fn raw_string() -> String {
     let link = "https://raw.githubusercontent.com/martin-gorner/tensorflow-rnn-shakespeare/refs/heads/master/shakespeare/sonnets.txt";
     fs::read_to_string("assets/sonnets.txt").unwrap_or_else(|_| {
         panic!(
-            "File not found, please download it directly from {} and place it at assets/sonnet.txt",
+            "File not found, please download it directly from {} and place it at assets/sonnets.txt\nYou can also run the binary with --download-sonnets flag to download it automatically.",
             link
         )
     })
