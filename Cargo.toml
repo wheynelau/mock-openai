@@ -21,7 +21,7 @@ tokenizers = { version = "0.22.1", features = ["hf-hub", "http"]}
 tower-http = { version = "0.6.6", features = ["trace"] }
 regex = "1.11.1"
 rand = "0.9.1"
-reqwest = { version = "0.12.4", features = ["json", "stream"] }
+reqwest = { version = "0.12.24", features = ["json", "rustls-tls", "stream"], default-features = false }
 
 # The profile that 'dist' will build with
 [profile.dist]
