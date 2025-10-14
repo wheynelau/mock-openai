@@ -14,6 +14,7 @@ use tower_http::trace::TraceLayer;
 pub use routes::Request;
 
 pub async fn start_server(address: &str, port: u16) -> std::io::Result<()> {
+    log::info!("Configuring application routes");
     // Build our application with routes
     let app = Router::new()
         .route("/hello", get(hello))
@@ -23,10 +24,13 @@ pub async fn start_server(address: &str, port: u16) -> std::io::Result<()> {
         .fallback(not_found)
         .layer(TraceLayer::new_for_http());
 
+    log::info!("Binding server to {}:{}", address, port);
     // Start server
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", address, port))
         .await
         .unwrap();
+    log::info!("Server successfully bound to {}:{}", address, port);
+    log::info!("Starting to accept incoming connections");
     axum::serve(listener, app).await
 }
 

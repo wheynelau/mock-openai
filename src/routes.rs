@@ -116,49 +116,87 @@ fn substitute_template(input: &str, max_tokens: usize, template: Option<&String>
 }
 
 pub async fn common_completions(Json(payload): Json<Request>) -> impl IntoResponse {
+    log::info!(
+        "Received completion request: stream={:?}, max_tokens={:?}",
+        payload.stream,
+        payload.max_tokens
+    );
+
     match payload.stream {
-        Some(true) => match chat_completions(payload).await {
-            Ok(stream) => Sse::new(stream).into_response(),
-            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Stream error").into_response(),
-        },
-        _ => match completions(payload).await {
-            Ok(response) => (StatusCode::OK, response).into_response(),
-            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Completion error").into_response(),
-        },
+        Some(true) => {
+            log::debug!("Processing streaming completion request");
+            match chat_completions(payload).await {
+                Ok(stream) => {
+                    log::debug!("Successfully created streaming completion");
+                    Sse::new(stream).into_response()
+                }
+                Err(_) => {
+                    log::error!("Failed to create streaming completion");
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Stream error").into_response()
+                }
+            }
+        }
+        _ => {
+            log::debug!("Processing non-streaming completion request");
+            match completions(payload).await {
+                Ok(response) => {
+                    log::debug!("Successfully created non-streaming completion");
+                    (StatusCode::OK, response).into_response()
+                }
+                Err(_) => {
+                    log::error!("Failed to create non-streaming completion");
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Completion error").into_response()
+                }
+            }
+        }
     }
 }
 
 async fn completions(payload: Request) -> Result<String, ()> {
     let response = if payload.max_tokens.is_some() {
         let max_tokens: usize = payload.max_tokens.unwrap();
+        log::debug!("Generating completion with {} max tokens", max_tokens);
+
         let return_string = if max_tokens >= *MAX_TOKENS {
+            log::debug!("Requested tokens exceed available, using full output");
             MAX_OUTPUT.to_string()
         } else {
+            log::debug!("Using partial output with {} tokens", max_tokens);
             TOKENIZED_OUTPUT[..max_tokens].join("")
         };
         substitute_template(&return_string, max_tokens, None)
     } else {
+        log::debug!("No max_tokens specified, using full output");
         substitute_template(&MAX_OUTPUT, *MAX_TOKENS, None)
     };
 
+    log::debug!("Generated response of {} characters", response.len());
     Ok(response)
 }
 
 async fn chat_completions(
     payload: Request,
 ) -> Result<impl Stream<Item = Result<Event, Infallible>>, ()> {
-    let max_tokens = payload.max_tokens.unwrap_or(*MAX_TOKENS);
-    let max_tokens = std::cmp::min(max_tokens, *MAX_TOKENS);
+    let requested_max_tokens = payload.max_tokens.unwrap_or(*MAX_TOKENS);
+    let max_tokens = std::cmp::min(requested_max_tokens, *MAX_TOKENS);
+    log::debug!(
+        "Streaming completion: requested={}, actual={}",
+        requested_max_tokens,
+        max_tokens
+    );
+
     let log_usage: bool = payload
         .stream_options
         .unwrap_or(StreamOptions {
             include_usage: false,
         })
         .include_usage;
+    log::debug!("Stream usage logging: {}", log_usage);
 
     let stream = StringsStream::new(TOKENIZED_OUTPUT.as_slice(), Some(max_tokens), log_usage)
         .map(|data| Ok(Event::default().data(data)));
 
+    log::debug!("Created streaming completion with {} tokens", max_tokens);
     Ok(stream)
 }
 
