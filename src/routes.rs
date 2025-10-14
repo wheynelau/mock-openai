@@ -20,6 +20,7 @@ use crate::common::{MAX_OUTPUT, MAX_TOKENS, TOKENIZED_OUTPUT};
 #[derive(Clone)]
 pub struct AppState {
     pub token: Option<String>,
+    pub inter_token_latency: u64,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -188,7 +189,7 @@ pub async fn common_completions(
     match payload.stream {
         Some(true) => {
             log::debug!("Processing streaming completion request");
-            match chat_completions(payload).await {
+            match chat_completions(State(state.clone()), payload).await {
                 Ok(stream) => {
                     log::debug!("Successfully created streaming completion");
                     Sse::new(stream).into_response()
@@ -238,14 +239,16 @@ async fn completions(payload: Request) -> Result<String, ()> {
 }
 
 async fn chat_completions(
+    State(state): State<AppState>,
     payload: Request,
 ) -> Result<impl Stream<Item = Result<Event, Infallible>>, ()> {
     let requested_max_tokens = payload.max_tokens.unwrap_or(*MAX_TOKENS);
     let max_tokens = std::cmp::min(requested_max_tokens, *MAX_TOKENS);
     log::debug!(
-        "Streaming completion: requested={}, actual={}",
+        "Streaming completion: requested={}, actual={}, latency={}ms",
         requested_max_tokens,
-        max_tokens
+        max_tokens,
+        state.inter_token_latency
     );
 
     let log_usage: bool = payload
@@ -256,8 +259,13 @@ async fn chat_completions(
         .include_usage;
     log::debug!("Stream usage logging: {}", log_usage);
 
-    let stream = StringsStream::new(TOKENIZED_OUTPUT.as_slice(), Some(max_tokens), log_usage)
-        .map(|data| Ok(Event::default().data(data)));
+    let stream = StringsStream::new(
+        TOKENIZED_OUTPUT.as_slice(),
+        Some(max_tokens),
+        log_usage,
+        state.inter_token_latency,
+    )
+    .map(|data| Ok(Event::default().data(data)));
 
     log::debug!("Created streaming completion with {} tokens", max_tokens);
     Ok(stream)

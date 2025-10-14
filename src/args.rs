@@ -41,4 +41,8 @@ pub struct Args {
     /// Optional API token for authentication (Bearer token)
     #[arg(long)]
     pub token: Option<String>,
+
+    /// Inter-token latency in milliseconds (0 to disable streaming delay)
+    #[arg(long = "inter-token-latency", default_value = "10")]
+    pub inter_token_latency: u64,
 }

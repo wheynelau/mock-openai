@@ -7,24 +7,35 @@ pub struct StringsStream {
     tokens: Vec<String>,
     index: usize,
     log_usage: bool,
-    interval: time::Interval,
+    interval: Option<time::Interval>,
     usage_sent: bool, // Track if usage message has been sent
 }
 
 impl StringsStream {
-    pub fn new(tokens: &[String], max_tokens: Option<usize>, log_usage: bool) -> Self {
+    pub fn new(
+        tokens: &[String],
+        max_tokens: Option<usize>,
+        log_usage: bool,
+        inter_token_latency: u64,
+    ) -> Self {
         let tokens = tokens.to_vec();
         let max_tokens = max_tokens.unwrap_or(tokens.len());
         let tokens = tokens.into_iter().take(max_tokens).collect();
+
+        let interval = if inter_token_latency > 0 {
+            Some(time::interval_at(
+                Instant::now() + Duration::from_millis(inter_token_latency),
+                Duration::from_millis(inter_token_latency),
+            ))
+        } else {
+            None
+        };
 
         StringsStream {
             tokens,
             index: 0,
             log_usage,
-            interval: time::interval_at(
-                Instant::now() + Duration::from_millis(10),
-                Duration::from_millis(10),
-            ),
+            interval,
             usage_sent: false,
         }
     }
@@ -47,9 +58,11 @@ impl Stream for StringsStream {
             return Poll::Ready(None);
         }
 
-        // Wait for the next interval tick
-        if self.interval.poll_tick(cx).is_pending() {
-            return Poll::Pending;
+        // Wait for the next interval tick if latency is enabled
+        if let Some(interval) = &mut self.interval {
+            if interval.poll_tick(cx).is_pending() {
+                return Poll::Pending;
+            }
         }
 
         let token = self.tokens[self.index].clone();

@@ -12,12 +12,13 @@ async fn main() -> std::io::Result<()> {
     let timeout: std::time::Duration = args.client_request_timeout.into();
 
     log::info!(
-        "Configuration: address={}, port={}, workers={}, max_connection_rate={}, timeout={:?}",
+        "Configuration: address={}, port={}, workers={}, max_connection_rate={}, timeout={:?}, inter_token_latency={}ms",
         args.address,
         args.port,
         args.workers,
         args.max_connection_rate,
-        timeout
+        timeout,
+        args.inter_token_latency
     );
 
     // Handle download flag
@@ -39,5 +40,11 @@ async fn main() -> std::io::Result<()> {
     );
 
     log::info!("Starting server on {}:{}", args.address, args.port);
-    start_server(&args.address, args.port, args.token).await
+    start_server(
+        &args.address,
+        args.port,
+        args.token,
+        args.inter_token_latency,
+    )
+    .await
 }

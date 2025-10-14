@@ -13,11 +13,19 @@ use tower_http::trace::TraceLayer;
 
 pub use routes::{AppState, Request};
 
-pub async fn start_server(address: &str, port: u16, token: Option<String>) -> std::io::Result<()> {
+pub async fn start_server(
+    address: &str,
+    port: u16,
+    token: Option<String>,
+    inter_token_latency: u64,
+) -> std::io::Result<()> {
     log::info!("Configuring application routes");
 
     // Create application state
-    let app_state = AppState { token };
+    let app_state = AppState {
+        token,
+        inter_token_latency,
+    };
 
     // Log authentication configuration
     if app_state.token.is_some() {
