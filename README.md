@@ -47,7 +47,24 @@ cargo run --release
 mock-openai
 ```
 
-The server will start on `localhost:8079` by default. You can change the port by setting the `SERVER_PORT` environment variable.
+The server will start on `0.0.0.0:8079` by default. You can configure the server using command line arguments:
+
+```bash
+# Custom port and address
+mock-openai --port 3000 --address 127.0.0.1
+
+# Set worker count and timeout with human-readable duration
+mock-openai --workers 4 --client-request-timeout 30m
+
+# Download sonnets automatically and continue running
+mock-openai --download-sonnets
+
+# Show all available options
+mock-openai --help
+
+# Show version
+mock-openai --version
+```
 
 ### Endpoints
 
@@ -142,21 +159,46 @@ oha -z 10m -c 512 -q 3000  --latency-correction --disable-keepalive \
 
 ## Configuration
 
-The server can be configured with the following environment variables:
+The server can be configured with the following command line arguments:
 
-`SERVER_WORKERS`: Number of workers to use. Default is the number of available CPU cores.  
-`SERVER_PORT=8079`: Port to listen on. Default is 8079.  
-`SERVER_ADDRESS=0.0.0.0`: Address to listen on. Default is 0.0.0.0  
-`SERVER_MAX_CONN_RATE=512`: Maximum connection rate. Default is 512.  
-`SERVER_CLIENT_REQUEST_TIMEOUT=600`: Request timeout for the client. Default is 600 seconds.  
+```bash
+Options:
+  -w, --workers <WORKERS>              Number of worker threads to spawn [default: CPU count]
+  --max-connection-rate <MAX_CONN_RATE> Maximum number of connections per second [default: 512]
+  -p, --port <PORT>                    Port to listen on [default: 8079]
+  -a, --address <ADDRESS>              Address to bind to [default: 0.0.0.0]
+      --client-request-timeout <TIMEOUT> Client request timeout (e.g., "600s", "10m", "1h") [default: 600s]
+      --download-sonnets              Download sonnets.txt
+  -h, --help                          Print help
+  -V, --version                       Print version
+```
 
-`RUST_LOG=info`: Set the log level. Default is warning. 
+### Examples
+
+```bash
+# Use custom port and workers
+mock-openai --port 8080 --workers 8
+
+# Set timeout to 10 minutes
+mock-openai --client-request-timeout 10m
+
+# Use different address and connection rate
+mock-openai --address 127.0.0.1 --max-connection-rate 1000
+
+# Download sonnets and run with custom settings
+mock-openai --download-sonnets --port 3000
+```
+
+The server also supports the `RUST_LOG` environment variable to set the log level. Default is warning:
+```bash
+RUST_LOG=info mock-openai
+``` 
 
 ## TODO
 
 - Optimise it further (How??)
 - Cleanup the structs
-- Considering downloading the sonnets within the code itself, wait for request
+- [DONE] Automatic sonnets download with --download-sonnets flag
 
 ## Contributing
 
