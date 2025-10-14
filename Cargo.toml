@@ -1,6 +1,6 @@
 [package]
 name = "mock-openai"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 repository = "https://github.com/wheynelau/mock-openai"
 description = "A mock OpenAI API server for testing purposes"
@@ -9,6 +9,8 @@ license = "MIT"
 [dependencies]
 anyhow = "1.0.97"
 axum = "0.8.4"
+clap = { version = "4.5.49", features = ["derive"] }
+duration-string = "0.5.3"
 env_logger = "0.11.6"
 futures-util = "0.3.31"
 log = "0.4.26"

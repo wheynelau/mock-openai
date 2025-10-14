@@ -1,19 +1,23 @@
+use clap::Parser;
 use mock_openai::start_server;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let args = mock_openai::args::get_args();
+    let args = mock_openai::args::Args::parse();
 
     // Initialize logger
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("warning"));
 
-    log::info!("Starting mock-openai server");
+    log::info!("Starting mock-openai server v{}", env!("CARGO_PKG_VERSION"));
+    let timeout: std::time::Duration = args.client_request_timeout.into();
+
     log::info!(
-        "Configuration: address={}, port={}, workers={}, max_connection_rate={}",
+        "Configuration: address={}, port={}, workers={}, max_connection_rate={}, timeout={:?}",
         args.address,
         args.port,
         args.workers,
-        args.max_connection_rate
+        args.max_connection_rate,
+        timeout
     );
 
     // Handle download flag
@@ -25,7 +29,6 @@ async fn main() -> std::io::Result<()> {
             std::process::exit(1);
         }
         log::info!("Sonnets download completed successfully");
-        return Ok(());
     }
 
     log::info!("Initializing tokenizer and loading sonnets...");
