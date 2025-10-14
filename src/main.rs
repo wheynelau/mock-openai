@@ -39,5 +39,5 @@ async fn main() -> std::io::Result<()> {
     );
 
     log::info!("Starting server on {}:{}", args.address, args.port);
-    start_server(&args.address, args.port).await
+    start_server(&args.address, args.port, args.token).await
 }

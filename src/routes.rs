@@ -1,8 +1,10 @@
 use axum::{
-    extract::Json,
+    extract::{Json, State},
     http::StatusCode,
     response::{sse::Event, sse::Sse, IntoResponse},
 };
+use axum_extra::headers::authorization::{Authorization, Bearer};
+use axum_extra::typed_header::TypedHeader;
 use futures_util::Stream;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -13,6 +15,12 @@ use tokio_stream::StreamExt;
 use crate::stream::StringsStream;
 
 use crate::common::{MAX_OUTPUT, MAX_TOKENS, TOKENIZED_OUTPUT};
+
+// Application state for holding the optional token
+#[derive(Clone)]
+pub struct AppState {
+    pub token: Option<String>,
+}
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Request {
@@ -115,7 +123,62 @@ fn substitute_template(input: &str, max_tokens: usize, template: Option<&String>
     .to_string()
 }
 
-pub async fn common_completions(Json(payload): Json<Request>) -> impl IntoResponse {
+// Validate Bearer token against the configured token
+fn validate_bearer_token(provided_token: &str, expected_token: &Option<String>) -> bool {
+    match expected_token {
+        Some(expected) => {
+            // For a simple toy project, we'll use direct string comparison
+            // In production, you might want to use constant-time comparison
+            provided_token == expected
+        }
+        None => {
+            // No token configured, so no authentication required
+            true
+        }
+    }
+}
+
+pub async fn common_completions(
+    State(state): State<AppState>,
+    auth_header: Option<TypedHeader<Authorization<Bearer>>>,
+    Json(payload): Json<Request>,
+) -> impl IntoResponse {
+    // Check authentication if token is configured
+    if let Some(expected_token) = &state.token {
+        match auth_header {
+            Some(TypedHeader(auth)) => {
+                if !validate_bearer_token(auth.token(), &Some(expected_token.clone())) {
+                    log::warn!("Authentication failed: invalid token");
+                    return (
+                        StatusCode::UNAUTHORIZED,
+                        Json(serde_json::json!({
+                            "error": {
+                                "message": "Invalid API key",
+                                "type": "invalid_request_error",
+                                "code": "invalid_api_key"
+                            }
+                        })),
+                    )
+                        .into_response();
+                }
+            }
+            None => {
+                log::warn!("Authentication failed: missing Authorization header");
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(serde_json::json!({
+                        "error": {
+                            "message": "Missing Authorization header",
+                            "type": "invalid_request_error",
+                            "code": "missing_api_key"
+                        }
+                    })),
+                )
+                    .into_response();
+            }
+        }
+    }
+
     log::info!(
         "Received completion request: stream={:?}, max_tokens={:?}",
         payload.stream,
