@@ -1,13 +1,17 @@
 pub mod args;
-pub mod common;
 pub mod routes;
 pub mod stream;
+pub mod template;
+
+pub mod generated {
+    include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+}
 
 use axum::{
+    Router,
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
-    Router,
 };
 use tower_http::trace::TraceLayer;
 
@@ -66,7 +70,7 @@ async fn echo(body: String) -> impl IntoResponse {
 }
 
 async fn get_max_tokens() -> impl IntoResponse {
-    format!("Max tokens: {}", *common::MAX_TOKENS)
+    format!("Max tokens: {}", generated::MAX_TOKENS)
 }
 
 async fn not_found() -> impl IntoResponse {

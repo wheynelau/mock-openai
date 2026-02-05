@@ -21,22 +21,9 @@ async fn main() -> std::io::Result<()> {
         args.inter_token_latency
     );
 
-    // Handle download flag
-    if args.download_sonnets {
-        log::info!("Download sonnets flag detected, downloading sonnets.txt...");
-        if let Err(e) = mock_openai::common::download_sonnets().await {
-            log::error!("Failed to download sonnets.txt: {}", e);
-            eprintln!("Failed to download sonnets.txt: {}", e);
-            std::process::exit(1);
-        }
-        log::info!("Sonnets download completed successfully");
-    }
-
-    log::info!("Initializing tokenizer and loading sonnets...");
-    let _ = &mock_openai::common::TOKENIZED_OUTPUT;
     log::info!(
-        "Tokenizer initialized successfully with {} tokens",
-        *mock_openai::common::MAX_TOKENS
+        "Tokens generated at build time: {}",
+        mock_openai::generated::MAX_TOKENS
     );
 
     log::info!("Starting server on {}:{}", args.address, args.port);

@@ -1,0 +1,81 @@
+name: Docker Publish
+
+on:
+  workflow_call:
+    inputs:
+      plan:
+        required: true
+        type: string
+        description: 'The dist plan JSON'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker-publish:
+    runs-on: ubuntu-22.04
+    # Only run for actual releases (not PRs)
+    if: ${{ fromJson(inputs.plan).announcement_is_prerelease != true || fromJson(inputs.plan).announcement_is_prerelease == true }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from plan
+        id: version
+        run: |
+          VERSION=$(echo '${{ inputs.plan }}' | jq -r '.announcement_version')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}"
+
+          # Check if this is a prerelease
+          IS_PRERELEASE=$(echo '${{ inputs.plan }}' | jq -r '.announcement_is_prerelease')
+          echo "is_prerelease=${IS_PRERELEASE}" >> $GITHUB_OUTPUT
+
+          # Generate tags
+          # Remove 'v' prefix if present
+          CLEAN_VERSION=${VERSION#v}
+          MAJOR_MINOR=$(echo $CLEAN_VERSION | grep -oE '^[0-9]+\.[0-9]+')
+
+          # Build tags array
+          TAGS="ghcr.io/${{ github.repository }}:${CLEAN_VERSION},ghcr.io/${{ github.repository }}:${MAJOR_MINOR}"
+
+          # Only add 'latest' tag for stable releases (not prereleases)
+          if [ "$IS_PRERELEASE" != "true" ]; then
+            # Check if version is 0.x.x - if so, don't tag as latest
+            if [[ ! "$CLEAN_VERSION" =~ ^0\. ]]; then
+              TAGS="${TAGS},ghcr.io/${{ github.repository }}:latest"
+            fi
+          fi
+
+          # Save tags to output (newline separated for GitHub Actions)
+          echo "${TAGS}" | tr ',' '\n' > /tmp/tags.txt
+          echo "tags<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/tags.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.version.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}

@@ -34,10 +34,6 @@ pub struct Args {
     )]
     pub client_request_timeout: DurationString,
 
-    /// Allow downloading sonnets from the internet if not found locally
-    #[arg(long)]
-    pub download_sonnets: bool,
-
     /// Optional API token for authentication (Bearer token)
     #[arg(long)]
     pub token: Option<String>,
