@@ -49,7 +49,7 @@ cargo run --release
 mock-openai
 ```
 
-The server will start on `0.0.0.0:8079` by default. You can configure the server using command line arguments:
+The server will start on `0.0.0.0:8000` by default. You can configure the server using command line arguments:
 
 ```bash
 # Custom port and address
@@ -98,7 +98,7 @@ import openai
 
 client = openai.OpenAI(
     api_key="your-secret-api-key",  # Use token if server started with --token
-    base_url='http://localhost:8079/v1/'
+    base_url='http://localhost:8000/v1/'
 )
 
 # non streaming
@@ -137,7 +137,7 @@ the OpenAI client implementation.
 ### Curl
 
 ```bash
-curl "http://localhost:8079/v1/chat/completions" \
+curl "http://localhost:8000/v1/chat/completions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer your-secret-api-key" \
     -d '{}'
@@ -179,7 +179,7 @@ The server can be configured with the following command line arguments:
 Options:
   -w, --workers <WORKERS>              Number of worker threads to spawn [default: CPU count]
   --max-connection-rate <MAX_CONN_RATE> Maximum number of connections per second [default: 512]
-  -p, --port <PORT>                    Port to listen on [default: 8079]
+  -p, --port <PORT>                    Port to listen on [default: 8000]
   -a, --address <ADDRESS>              Address to bind to [default: 0.0.0.0]
       --client-request-timeout <TIMEOUT> Client request timeout (e.g., "600s", "10m", "1h") [default: 600s]
       --download-sonnets              Download sonnets.txt
@@ -210,7 +210,7 @@ mock-openai --token "your-secret-api-key-here"
 mock-openai --token "sk-mock123456" --port 8080 --workers 4
 ```
 
-The server also supports the `RUST_LOG` environment variable to set the log level. Default is warning:
+The server also supports the `RUST_LOG` environment variable to set the log level. Default is info:
 ```bash
 RUST_LOG=info mock-openai
 ```

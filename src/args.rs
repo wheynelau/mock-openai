@@ -19,7 +19,7 @@ pub struct Args {
     pub max_connection_rate: usize,
 
     /// Port to listen on
-    #[arg(short, long, default_value = "8079")]
+    #[arg(short, long, default_value = "8000")]
     pub port: u16,
 
     /// Address to bind to

@@ -27,7 +27,7 @@ FROM gcr.io/distroless/static-debian13:nonroot
 
 COPY --from=builder /mock-openai /mock-openai
 
-EXPOSE 8079
+EXPOSE 8000
 
 USER nonroot:nonroot
 

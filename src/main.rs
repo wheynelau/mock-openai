@@ -1,12 +1,18 @@
 use clap::Parser;
 use mock_openai::start_server;
 
+fn init_logger() {
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Info)
+        .init();
+}
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let args = mock_openai::args::Args::parse();
 
     // Initialize logger
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("warning"));
+    init_logger();
 
     log::info!("Starting mock-openai server v{}", env!("CARGO_PKG_VERSION"));
     let timeout: std::time::Duration = args.client_request_timeout.into();
