@@ -1,5 +1,5 @@
 # Stage 1: Prepare binary
-FROM alpine:3.20 AS builder
+FROM alpine:3 AS builder
 
 ARG VERSION
 ARG REPO=wheynelau/mock-openai
