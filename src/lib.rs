@@ -40,8 +40,7 @@ pub async fn start_server(
 
     // Build our application with routes
     let app = Router::new()
-        .route("/hello", get(hello))
-        .route("/echo", post(echo))
+        .route("/health", get(health))
         .route("/tokens", get(get_max_tokens))
         .nest("/v1", v1_routes())
         .fallback(not_found)
@@ -61,12 +60,8 @@ pub async fn start_server(
     axum::serve(listener, app).await
 }
 
-async fn hello() -> impl IntoResponse {
-    "Hello world!"
-}
-
-async fn echo(body: String) -> impl IntoResponse {
-    body
+async fn health() -> impl IntoResponse {
+    StatusCode::OK
 }
 
 async fn get_max_tokens() -> impl IntoResponse {
