@@ -173,17 +173,18 @@ oha -z 10m -c 512 -q 3000  --latency-correction --disable-keepalive \
 
 ## Configuration
 
-The server can be configured with the following command line arguments:
+The server can be configured with the following command line arguments or their equivalent environment variables:
 
 ```bash
 Options:
-  -w, --workers <WORKERS>              Number of worker threads to spawn [default: CPU count]
-  --max-connection-rate <MAX_CONN_RATE> Maximum number of connections per second [default: 512]
-  -p, --port <PORT>                    Port to listen on [default: 8000]
-  -a, --address <ADDRESS>              Address to bind to [default: 0.0.0.0]
-      --client-request-timeout <TIMEOUT> Client request timeout (e.g., "600s", "10m", "1h") [default: 600s]
+  -w, --workers <WORKERS>              Number of worker threads to spawn [env: WORKERS] [default: CPU count]
+  --max-connection-rate <MAX_CONN_RATE> Maximum number of connections per second [env: MAX_CONNECTION_RATE] [default: 512]
+  -p, --port <PORT>                    Port to listen on [env: PORT] [default: 8000]
+  -a, --address <ADDRESS>              Address to bind to [env: ADDRESS] [default: 0.0.0.0]
+      --client-request-timeout <TIMEOUT> Client request timeout (e.g., "600s", "10m", "1h") [env: TIMEOUT] [default: 600s]
       --download-sonnets              Download sonnets.txt
-      --token <TOKEN>                  Optional API token for Bearer authentication
+      --token <TOKEN>                  Optional API token for Bearer authentication [env: OPENAI_API_KEY]
+      --inter-token-latency <MILLIS>  Inter-token latency in milliseconds [env: MOCK_ITL] [default: 10]
   -h, --help                          Print help
   -V, --version                       Print version
 ```
@@ -208,6 +209,9 @@ mock-openai --token "your-secret-api-key-here"
 
 # Run with authentication and custom settings
 mock-openai --token "sk-mock123456" --port 8080 --workers 4
+
+# Use environment variables instead
+PORT=8080 WORKERS=4 OPENAI_API_KEY="sk-mock123456" mock-openai
 ```
 
 The server also supports the `RUST_LOG` environment variable to set the log level. Default is info:
