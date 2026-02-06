@@ -22,6 +22,7 @@ jobs:
         with:
           persist-credentials: false
 
+      # these steps are quite generic
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -35,6 +36,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # need the version as ARG for the Docker build
       - name: Extract version from plan
         id: version
         run: |
@@ -42,6 +44,7 @@ jobs:
           echo "version=${TAG}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
+      # semver tags and latest tag
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -52,7 +55,32 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }}
             type=semver,pattern={{major}},value=${{ steps.version.outputs.tag }},enable=${{ !startsWith(steps.version.outputs.tag, 'v0.') && !startsWith(steps.version.outputs.tag, '0.') }}
             type=raw,value=latest,enable=${{ !fromJson(inputs.plan).announcement_is_prerelease }}
+      
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifacts-build-local-x86_64-unknown-linux-musl
+          path: artifacts/amd64
 
+      # Download the arm64 artifact into a folder named 'arm64'
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifacts-build-local-aarch64-unknown-linux-musl
+          path: artifacts/arm64
+
+      - name: Extract and Normalize Artifacts
+        run: |
+          # Extract
+          tar -xJf artifacts/amd64/*.tar.xz -C artifacts/amd64/
+          tar -xJf artifacts/arm64/*.tar.xz -C artifacts/arm64/
+
+          # Move
+          mv artifacts/amd64/**/mock-openai artifacts/amd64/mock-openai
+          mv artifacts/arm64/**/mock-openai artifacts/arm64/mock-openai
+
+          # Insurance policy: Mark as executable on the runner host
+          # This 'mode' is preserved by the Docker COPY command
+          chmod +x artifacts/amd64/mock-openai
+          chmod +x artifacts/arm64/mock-openai
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -61,5 +89,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            VERSION=${{ steps.version.outputs.version }}
