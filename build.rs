@@ -14,9 +14,9 @@ fn main() {
     let tokenizer = tokenizers::Tokenizer::from_file("build/tokenizer.json").unwrap();
     let tokens = tokenizer.encode(raw_string, false).unwrap();
     let decoded_tokens: Vec<String> = tokens
-        .get_ids()
-        .iter()
-        .map(|id| tokenizer.decode(&[*id], true).unwrap())
+        .get_tokens()
+        .into_iter()
+        .map(|s| serde_json::to_string(s).expect("Failed to escape token string"))
         .collect();
 
     let out_dir = env::var("OUT_DIR").unwrap();

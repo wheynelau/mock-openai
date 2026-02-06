@@ -1,6 +1,6 @@
 use axum::{
     extract::{Json, State},
-    http::StatusCode,
+    http::{StatusCode, header},
     response::{IntoResponse, sse::Event, sse::Sse},
 };
 use axum_extra::headers::authorization::{Authorization, Bearer};
@@ -71,13 +71,8 @@ pub async fn common_completions(
                     log::warn!("Authentication failed: invalid token");
                     return (
                         StatusCode::UNAUTHORIZED,
-                        Json(serde_json::json!({
-                            "error": {
-                                "message": "Invalid API key",
-                                "type": "invalid_request_error",
-                                "code": "invalid_api_key"
-                            }
-                        })),
+                        [(header::CONTENT_TYPE, "application/json")],
+                        crate::template::ERROR_INVALID_API_KEY,
                     )
                         .into_response();
                 }
@@ -86,13 +81,8 @@ pub async fn common_completions(
                 log::warn!("Authentication failed: missing Authorization header");
                 return (
                     StatusCode::UNAUTHORIZED,
-                    Json(serde_json::json!({
-                        "error": {
-                            "message": "Missing Authorization header",
-                            "type": "invalid_request_error",
-                            "code": "missing_api_key"
-                        }
-                    })),
+                    [(header::CONTENT_TYPE, "application/json")],
+                    crate::template::ERROR_MISSING_API_KEY,
                 )
                     .into_response();
             }

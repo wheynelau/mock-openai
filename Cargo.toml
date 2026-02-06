@@ -1,6 +1,6 @@
 [package]
 name = "mock-openai"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2024"
 repository = "https://github.com/wheynelau/mock-openai"
 description = "A mock OpenAI API server for testing purposes"
@@ -22,6 +22,10 @@ axum-extra = { version = "0.10.3", features = ["typed-header"] }
 
 [build-dependencies]
 tokenizers = "0.22.2"
+serde_json = "1.0.140"
+
+[dev-dependencies]
+criterion = "0.8.2"
 
 # The profile that 'dist' will build with
 [profile.dist]
@@ -29,3 +33,11 @@ inherits = "release"
 lto = "fat"
 strip = true
 codegen-units = 1
+
+[[bench]]
+name = "template_bench"
+harness = false
+
+[[bench]]
+name = "format_vs_push"
+harness = false
