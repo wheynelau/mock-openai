@@ -1,6 +1,6 @@
 [package]
 name = "mock-openai"
-version = "0.4.3"
+version = "0.4.4"
 edition = "2024"
 repository = "https://github.com/wheynelau/mock-openai"
 description = "A mock OpenAI API server for testing purposes"
@@ -18,7 +18,7 @@ serde_json = "1.0.140"
 tokio = { version = "1.47.1", features = ["full"] }
 tokio-stream = "0.1.14"
 tower-http = { version = "0.6.6", features = ["trace"] }
-axum-extra = { version = "0.10.3", features = ["typed-header"] }
+axum-extra = { version = "0.12.5", features = ["typed-header"] }
 
 [build-dependencies]
 tokenizers = "0.22.2"

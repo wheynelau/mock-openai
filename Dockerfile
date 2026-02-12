@@ -9,4 +9,5 @@ EXPOSE 8000
 
 USER nonroot:nonroot
 
-ENTRYPOINT ["/mock-openai"]
+ENTRYPOINT ["mock-openai"]
+
