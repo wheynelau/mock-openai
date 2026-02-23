@@ -1,13 +1,12 @@
 FROM gcr.io/distroless/static-debian13:nonroot
 
-ARG REPO=wheynelau/mock-openai
 ARG TARGETARCH
+ARG BINARY_NAME
 
-COPY artifacts/${TARGETARCH}/mock-openai /usr/local/bin/mock-openai
+COPY artifacts/${TARGETARCH}/${BINARY_NAME} /usr/local/bin/${BINARY_NAME}
 
 EXPOSE 8000
 
 USER nonroot:nonroot
 
-ENTRYPOINT ["mock-openai"]
-
+ENTRYPOINT ["${BINARY_NAME}"]

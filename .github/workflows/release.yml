@@ -302,6 +302,7 @@ jobs:
     uses: ./.github/workflows/docker-publish.yml
     with:
       plan: ${{ needs.plan.outputs.val }}
+      binary_name: mock-openai
     secrets: inherit
     permissions:
       "contents": "read"

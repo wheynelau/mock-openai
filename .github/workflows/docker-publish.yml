@@ -6,11 +6,16 @@ on:
       plan:
         required: true
         type: string
-        description: 'The dist plan JSON'
-
-permissions:
-  contents: read
-  packages: write
+        description: "The dist plan JSON"
+      binary_name:
+        required: true
+        type: string
+        description: "The name of the binary produced by cargo-dist (e.g. mock-openai)"
+      target_triple_suffix:
+        required: false
+        type: string
+        default: "unknown-linux-musl"
+        description: "The target triple suffix used in artifact names (e.g. unknown-linux-musl or unknown-linux-gnu)"
 
 jobs:
   docker-publish:
@@ -55,16 +60,15 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }}
             type=semver,pattern={{major}},value=${{ steps.version.outputs.tag }},enable=${{ !startsWith(steps.version.outputs.tag, 'v0.') && !startsWith(steps.version.outputs.tag, '0.') }}
             type=raw,value=latest,enable=${{ !fromJson(inputs.plan).announcement_is_prerelease }}
-      
+
       - uses: actions/download-artifact@v4
         with:
-          name: artifacts-build-local-x86_64-unknown-linux-musl
+          name: artifacts-build-local-x86_64-${{ inputs.target_triple_suffix }}
           path: artifacts/amd64
 
-      # Download the arm64 artifact into a folder named 'arm64'
       - uses: actions/download-artifact@v4
         with:
-          name: artifacts-build-local-aarch64-unknown-linux-musl
+          name: artifacts-build-local-aarch64-${{ inputs.target_triple_suffix }}
           path: artifacts/arm64
 
       - name: Extract and Normalize Artifacts
@@ -74,13 +78,13 @@ jobs:
           tar -xJf artifacts/arm64/*.tar.xz -C artifacts/arm64/
 
           # Move
-          mv artifacts/amd64/**/mock-openai artifacts/amd64/mock-openai
-          mv artifacts/arm64/**/mock-openai artifacts/arm64/mock-openai
+          mv artifacts/amd64/**/${{ inputs.binary_name }} artifacts/amd64/${{ inputs.binary_name }}
+          mv artifacts/arm64/**/${{ inputs.binary_name }} artifacts/arm64/${{ inputs.binary_name }}
 
           # Insurance policy: Mark as executable on the runner host
           # This 'mode' is preserved by the Docker COPY command
-          chmod +x artifacts/amd64/mock-openai
-          chmod +x artifacts/arm64/mock-openai
+          chmod +x artifacts/amd64/${{ inputs.binary_name }}
+          chmod +x artifacts/arm64/${{ inputs.binary_name }}
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -89,3 +93,4 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: BINARY_NAME=${{ inputs.binary_name }}
