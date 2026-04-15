@@ -16,6 +16,7 @@ fn main() {
     let decoded_tokens: Vec<String> = tokens
         .get_tokens()
         .into_iter()
+        // serde here so we don't have to worry about escaping quotes/newlines in the token strings
         .map(|s| serde_json::to_string(s).expect("Failed to escape token string"))
         .collect();
 
