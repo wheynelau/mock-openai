@@ -942,7 +942,7 @@ dependencies = [
 
 [[package]]
 name = "mock-openai"
-version = "0.6.0"
+version = "0.6.0-rc1"
 dependencies = [
  "axum",
  "axum-extra",
