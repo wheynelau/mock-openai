@@ -1,3 +1,6 @@
+# Reusable workflow for building and publishing Docker images
+# Called by cargo-dist via post-announce-jobs
+
 name: Docker Publish
 
 on:
@@ -6,50 +9,38 @@ on:
       plan:
         required: true
         type: string
-        description: "The dist plan JSON"
-      binary_name:
-        required: true
-        type: string
-        description: "The name of the binary produced by cargo-dist (e.g. mock-openai)"
-      target_triple_suffix:
-        required: false
-        type: string
-        default: "unknown-linux-musl"
-        description: "The target triple suffix used in artifact names (e.g. unknown-linux-musl or unknown-linux-gnu)"
 
 jobs:
-  docker-publish:
+  docker:
     runs-on: ubuntu-22.04
-    # Only run for actual releases
+    # Only run if this is an actual release (not a PR)
     if: ${{ fromJson(inputs.plan).announcement_tag != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      # these steps are quite generic
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # need the version as ARG for the Docker build
       - name: Extract version from plan
         id: version
         run: |
+          # Get version from the plan JSON (this is the release tag, e.g., "0.2.0-beta.4" or "v0.2.0")
           TAG='${{ fromJson(inputs.plan).announcement_tag }}'
           echo "version=${TAG}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
-      # semver tags and latest tag
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -63,12 +54,13 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: artifacts-build-local-x86_64-${{ inputs.target_triple_suffix }}
+          name: artifacts-build-local-x86_64-unknown-linux-gnu
           path: artifacts/amd64
 
+      # Download the arm64 artifact into a folder named 'arm64'
       - uses: actions/download-artifact@v4
         with:
-          name: artifacts-build-local-aarch64-${{ inputs.target_triple_suffix }}
+          name: artifacts-build-local-aarch64-unknown-linux-gnu
           path: artifacts/arm64
 
       - name: Extract and Normalize Artifacts
@@ -78,13 +70,13 @@ jobs:
           tar -xJf artifacts/arm64/*.tar.xz -C artifacts/arm64/
 
           # Move
-          mv artifacts/amd64/**/${{ inputs.binary_name }} artifacts/amd64/${{ inputs.binary_name }}
-          mv artifacts/arm64/**/${{ inputs.binary_name }} artifacts/arm64/${{ inputs.binary_name }}
+          mv artifacts/amd64/**/mock-openai artifacts/amd64/mock-openai
+          mv artifacts/arm64/**/mock-openai artifacts/arm64/mock-openai
 
           # Insurance policy: Mark as executable on the runner host
           # This 'mode' is preserved by the Docker COPY command
-          chmod +x artifacts/amd64/${{ inputs.binary_name }}
-          chmod +x artifacts/arm64/${{ inputs.binary_name }}
+          chmod +x artifacts/amd64/mock-openai
+          chmod +x artifacts/arm64/mock-openai
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -93,4 +85,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: BINARY_NAME=${{ inputs.binary_name }}
