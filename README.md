@@ -21,16 +21,7 @@ This is an OpenAI compatible mock server for experimentation and testing.
 
 ## Installation
 
-Check the releases tab. 
-
-**Note**: You will need to download sonnets.txt into assets/sonnets.txt, relative to the binary.
-The file is not included in the release. You can download the file [here](https://github.com/martin-gorner/tensorflow-rnn-shakespeare/blob/master/shakespeare/sonnets.txt)
-
-```bash
-# quick commands
-mkdir -p assets
-wget -O assets/sonnets.txt https://raw.githubusercontent.com/martin-gorner/tensorflow-rnn-shakespeare/master/shakespeare/sonnets.txt
-```
+Check the releases tab.
 
 ### Cargo
 
@@ -57,9 +48,6 @@ mock-openai --port 3000 --address 127.0.0.1
 
 # Set worker count and timeout with human-readable duration
 mock-openai --workers 4 --client-request-timeout 30m
-
-# Download sonnets automatically and continue running
-mock-openai --download-sonnets
 
 # Show all available options
 mock-openai --help
@@ -182,7 +170,6 @@ Options:
   -p, --port <PORT>                    Port to listen on [env: PORT] [default: 8000]
   -a, --address <ADDRESS>              Address to bind to [env: ADDRESS] [default: 0.0.0.0]
       --client-request-timeout <TIMEOUT> Client request timeout (e.g., "600s", "10m", "1h") [env: TIMEOUT] [default: 600s]
-      --download-sonnets              Download sonnets.txt
       --token <TOKEN>                  Optional API token for Bearer authentication [env: OPENAI_API_KEY]
       --inter-token-latency <MILLIS>  Inter-token latency in milliseconds [env: MOCK_ITL] [default: 10]
   -h, --help                          Print help
@@ -200,9 +187,6 @@ mock-openai --client-request-timeout 10m
 
 # Use different address and connection rate
 mock-openai --address 127.0.0.1 --max-connection-rate 1000
-
-# Download sonnets and run with custom settings
-mock-openai --download-sonnets --port 3000
 
 # Enable authentication with a bearer token
 mock-openai --token "your-secret-api-key-here"
@@ -227,7 +211,6 @@ mock-openai is a **mock server designed for testing and development purposes onl
 
 - Optimise it further (How??)
 - Cleanup the structs
-- [DONE] Automatic sonnets download with --download-sonnets flag
 
 ## Contributing
 
