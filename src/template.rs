@@ -6,7 +6,6 @@
 ///
 /// Start chunk + content + end chunk
 /// Rather than format!("{}{}{}", start, content, end) or SSE_TEMPLATE.replace("{content}", content)
-
 const SSE_CHUNK_PREFIX: &str = r#"{"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1770187171,"model":"sonnet-mock-model","choices":[{"index":0,"delta":{"content":"#;
 const SSE_CHUNK_SUFFIX: &str =
     r#","reasoning_content":null},"logprobs":null,"finish_reason":null,"token_ids":null}]}"#;

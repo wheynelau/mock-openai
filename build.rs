@@ -15,7 +15,7 @@ fn main() {
     let tokens = tokenizer.encode(raw_string, false).unwrap();
     let decoded_tokens: Vec<String> = tokens
         .get_tokens()
-        .into_iter()
+        .iter()
         // serde here so we don't have to worry about escaping quotes/newlines in the token strings
         .map(|s| serde_json::to_string(s).expect("Failed to escape token string"))
         .collect();
